@@ -70,7 +70,7 @@ async function initTTS() {
 
 
 function userSubmit(e) {
-    e.preventDefault()
+    e && e.preventDefault()
     let userTxt = $("#userInp").value
     let parts = userTxt.split(" ")
     let message
@@ -324,3 +324,4 @@ function $$(selector) {
 let _id = 1
 let _div = document.createElement("div")
 init()
+window.submit = userSubmit
