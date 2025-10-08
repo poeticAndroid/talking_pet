@@ -34,7 +34,7 @@ async function initLLM() {
     llm = new Worker('worker.js', { type: "module" })
     await runWorker(llm)
     let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-1.7B-Instruct", {
-        // device: "webgpu",
+        device: "webgpu",
         dtype: "fp16"
     })
     if (result.success) {
