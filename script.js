@@ -73,8 +73,9 @@ function userSubmit(e) {
     e.preventDefault()
     let userTxt = $("#userInp").value
     let parts = userTxt.split(" ")
+    let message
     switch (parts[0]) {
-        case "/reload":
+        case "/unload":
             llm && llm.terminate()
             llm = null
             $("#llmStatus").setAttribute("class", "")
@@ -83,9 +84,20 @@ function userSubmit(e) {
             $("#ttsStatus").setAttribute("class", "")
             break;
 
+
+        case "/undo":
+            do {
+                message = chat.pop()
+                $("#message_" + message.id).parentNode.removeChild($("#message_" + message.id))
+            } while (message.role != "user")
+            setTimeout(() => {
+                $("#userInp").value = message.content
+            })
+            break;
+
         default:
             if (userTxt.trim()) {
-                let message = {
+                message = {
                     role: "user",
                     content: userTxt
                 }
@@ -262,10 +274,12 @@ function runWorker(worker, cmd, ...args) {
 }
 
 function logMessage(message) {
+    message.id = _id++
     let parts = splitSentences(message.content)
     let html = ""
     for (let part of parts) html += `<span class="sentence">${escape(part)}</span>`
-    log(html, message.role, true)
+    let el = log(html, message.role, true)
+    el.id = `message_${message.id}`
     chat.push(message)
 }
 
@@ -279,6 +293,7 @@ function log(str, src, html) {
     }
     $("#log").appendChild(el)
     window.scrollBy(0, 1024)
+    return el
 }
 
 
