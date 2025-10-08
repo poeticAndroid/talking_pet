@@ -7,17 +7,18 @@ self.addEventListener("message", async (e) => {
     switch (e.data.cmd) {
         case "init":
             ai = await pipeline(...e.data.args)
-            self.postMessage({ success: true })
+            self.postMessage({ success: true, id: e.data.id })
             break;
 
         case "process":
             let res = await ai(...e.data.args)
             res.success = true
+            res.id = e.data.id
             self.postMessage(res)
             break;
 
         default:
-            self.postMessage({ success: false, status: "unknown cmd" })
+            self.postMessage({ success: false, status: "unknown cmd", id: e.data.id })
             break;
     }
 });

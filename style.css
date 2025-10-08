@@ -29,6 +29,10 @@ html {
     background: #001;
 }
 
+.speaking {
+    text-decoration: underline;
+}
+
 .status {
     text-align: center;
 }

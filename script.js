@@ -10,7 +10,7 @@ async function init() {
     document.body.addEventListener("click", initAudio)
     $("form").addEventListener("submit", userSubmit)
 
-    logMessage({ role: "system", content: "You are a happy little boy." })
+    logMessage({ role: "system", content: "You are an adorable pet that can talk." })
     logMessage({ role: "user", content: "Hello there!" })
     think()
 }
@@ -33,11 +33,14 @@ async function initLLM() {
     $("#llmStatus").classList.add("init")
     llm = new Worker('worker.js', { type: "module" })
     await runWorker(llm)
-    let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-360M-Instruct", { device: "webgpu", dtype: "q4f16" })
+    let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-1.7B-Instruct", { device: "webgpu", dtype: "fp16" })
     if (result.success) {
         $("#llmStatus").classList.remove("init")
         $("#llmStatus").classList.add("idle")
-    } else { throw result }
+    } else {
+        log(JSON.stringify(result))
+        throw result
+    }
     return result
 }
 
@@ -54,7 +57,10 @@ async function initTTS() {
     if (result.success) {
         $("#ttsStatus").classList.remove("init")
         $("#ttsStatus").classList.add("idle")
-    } else { throw result }
+    } else {
+        log(JSON.stringify(result))
+        throw result
+    }
     return result
 }
 
@@ -63,27 +69,47 @@ async function initTTS() {
 function userSubmit(e) {
     e.preventDefault()
     let userTxt = $("#userInp").value
-    let message = {
-        role: "user",
-        content: userTxt
-    };
-    logMessage(message)
-    think()
+    let parts = userTxt.split(" ")
+    switch (parts[0]) {
+        case "/reload":
+            llm && llm.terminate()
+            llm = null
+            tts && tts.terminate()
+            tts = null
+            break;
+
+        default:
+            if (userTxt.trim()) {
+                let message = {
+                    role: "user",
+                    content: userTxt
+                }
+                logMessage(message)
+            }
+            think()
+            break;
+    }
     $("#userInp").value = ""
 }
 
 async function think() {
     await initLLM()
     $("#llmStatus").classList.add("busy")
-    let result = await runWorker(llm, "process", chat, {
-        max_new_tokens: 128,
-        do_sample: true
-    })
-    $("#llmStatus").classList.remove("busy")
-    let message = result[0].generated_text.pop()
-    logMessage(message)
-    // $("#userInp").focus()
-    await speak(message.content)
+    try {
+        let result = await runWorker(llm, "process", chat, {
+            max_new_tokens: 128,
+            do_sample: true
+        })
+        $("#llmStatus").classList.remove("busy")
+        let message = result[0].generated_text.pop()
+        logMessage(message)
+        // $("#userInp").focus()
+        await speak(message.content)
+    } catch (error) {
+        log(JSON.stringify(error))
+        llm && llm.terminate()
+        llm = null
+    }
 }
 
 async function speak(txt) {
@@ -93,14 +119,20 @@ async function speak(txt) {
     $("#ttsStatus").classList.add("busy")
     let sentences = splitSentences(txt)
     let speaker_embeddings =
-        "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin";
+        "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin"
     for (let sentence of sentences) {
         if (!sentence.trim()) continue;
-        let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
-        speech.text = sentence.trim()
-        console.log("Queuing:", speech.text)
-        ttsQueue.push(speech)
-        processTtsQueue()
+        try {
+            let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
+            speech.text = sentence.trim()
+            console.log("Queuing:", speech.text)
+            ttsQueue.push(speech)
+            processTtsQueue()
+        } catch (error) {
+            log(JSON.stringify(error))
+            tts && tts.terminate()
+            tts = null
+        }
     }
     $("#ttsStatus").classList.remove("busy")
 }
@@ -109,21 +141,19 @@ function splitSentences(txt) {
     let sentences = [""]
     let quot,
         wrap,
-        parens = 0;
+        parens = 0
     for (let char of txt) {
-        sentences[sentences.length - 1] = (
-            sentences[sentences.length - 1] + char
-        ).trimStart()
+        sentences[sentences.length - 1] += char
         if (quot || parens) {
             switch (char) {
                 case quot:
-                    quot = null;
+                    quot = null
                     break;
                 case "(":
-                    parens++;
+                    parens++
                     break;
                 case ")":
-                    parens--;
+                    parens--
                     break;
 
                 case ".":
@@ -131,25 +161,25 @@ function splitSentences(txt) {
                 case "?":
                 case ":":
                 case ";":
-                    wrap = true;
+                    wrap = true
                     break;
             }
             if (wrap && !(quot || parens)) {
                 sentences.push("")
-                wrap = false;
+                wrap = false
             }
         } else {
             switch (char) {
-                case '"':
-                case "'":
-                    quot = char;
-                    if (sentences[sentences.length - 1].slice(-2).trim().length > 1)
-                        quot = null;
-                    break;
+                // case '"':
+                // case "'":
+                //     quot = char
+                //     if (sentences[sentences.length - 1].slice(-2).trim().length > 1)
+                //         quot = null
+                //     break;
 
-                case "(":
-                    parens++;
-                    break;
+                // case "(":
+                //     parens++
+                //     break;
 
                 case ".":
                 case "!":
@@ -164,7 +194,7 @@ function splitSentences(txt) {
         }
     }
     if (!sentences[sentences.length - 1].trim()) sentences.pop()
-    return sentences;
+    return sentences
 }
 
 function processTtsQueue() {
@@ -173,7 +203,7 @@ function processTtsQueue() {
     let speech = ttsQueue.shift()
 
     initAudio()
-    speaking = true;
+    speaking = true
     let audioBuffer = audioCtx.createBuffer(
         1,
         speech.audio.length,
@@ -181,31 +211,43 @@ function processTtsQueue() {
     )
     audioBuffer.copyToChannel(speech.audio, 0)
     let audioSource = audioCtx.createBufferSource()
-    audioSource.buffer = audioBuffer;
+    audioSource.buffer = audioBuffer
     audioSource.connect(audioCtx.destination)
     audioSource.start()
+    let spans = $$(".sentence")
+    let i = spans.length
+    while (i--) {
+        if (spans[i].textContent.trim() == speech.text) {
+            spans[i].classList.add("speaking")
+            break;
+        }
+    }
     audioSource.addEventListener("ended", (e) => {
-        speaking = false;
+        speaking = false
+        spans[i].classList.remove("speaking")
         audioSource.disconnect(audioCtx.destination)
         processTtsQueue()
     })
 }
 
 function runWorker(worker, cmd, ...args) {
-    if (cmd) worker.postMessage({ cmd: cmd, args: args })
+    let id = _id++
+    if (cmd) worker.postMessage({ cmd: cmd, args: args, id: id })
     return new Promise((resolve, reject) => {
         const onMessage = (e) => {
+            if (cmd && e.data.id != id) return
             cleanup()
             resolve(e.data)
-        };
+        }
         const onError = (err) => {
+            if (cmd && err.data.id != id) return
             cleanup()
             reject(err)
-        };
+        }
         const cleanup = () => {
             worker.removeEventListener('message', onMessage)
             worker.removeEventListener('error', onError)
-        };
+        }
 
         worker.addEventListener('message', onMessage)
         worker.addEventListener('error', onError)
@@ -213,19 +255,29 @@ function runWorker(worker, cmd, ...args) {
 }
 
 function logMessage(message) {
-    log(message.content, message.role)
+    let parts = splitSentences(message.content)
+    let html = ""
+    for (let part of parts) html += `<span class="sentence">${escape(part)}</span> `
+    log(html, message.role, true)
     chat.push(message)
 }
 
-function log(str, src) {
+function log(str, src, html) {
     let el = document.createElement("p")
-    el.textContent = str;
+    el.textContent = str
+    if (html) el.innerHTML = str
     if (src) {
         el.classList.add(src)
-        el.innerHTML = `<strong>${src}:</strong> ` + el.innerHTML;
+        el.innerHTML = `<strong>${src}:</strong> ` + el.innerHTML
     }
     $("#log").appendChild(el)
     window.scrollBy(0, 1024)
+}
+
+
+function escape(txt) {
+    _div.textContent = txt
+    return _div.innerHTML
 }
 
 function $(selector) {
@@ -235,4 +287,6 @@ function $$(selector) {
     return document.querySelectorAll(selector)
 }
 
+let _id = 1
+let _div = document.createElement("div")
 init()
