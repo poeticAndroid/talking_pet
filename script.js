@@ -143,14 +143,14 @@ async function speak(txt) {
         if (!sentence.trim()) continue;
         try {
             let span = findSentence(sentence)
-            span.classList.add("rendering")
+            span?.classList.add("rendering")
             $("#ttsStatus").classList.add("busy")
             let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
             speech.text = sentence.trim()
             console.log("Queuing:", speech.text)
             ttsQueue.push(speech)
-            span.classList.remove("rendering")
-            span.classList.add("queued")
+            span?.classList.remove("rendering")
+            span?.classList.add("queued")
             processTtsQueue()
         } catch (error) {
             log(JSON.stringify(error))
@@ -240,11 +240,11 @@ function processTtsQueue() {
     audioSource.connect(audioCtx.destination)
     audioSource.start()
     let span = findSentence(speech.text)
-    span.classList.remove("queued")
-    span.classList.add("speaking")
+    span?.classList.remove("queued")
+    span?.classList.add("speaking")
     audioSource.addEventListener("ended", (e) => {
         speaking = false
-        span.classList.remove("speaking")
+        span?.classList.remove("speaking")
         audioSource.disconnect(audioCtx.destination)
         processTtsQueue()
     })
