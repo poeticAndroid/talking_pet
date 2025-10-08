@@ -74,8 +74,10 @@ function userSubmit(e) {
         case "/reload":
             llm && llm.terminate()
             llm = null
+            $("#llmStatus").setAttribute("class", "")
             tts && tts.terminate()
             tts = null
+            $("#ttsStatus").setAttribute("class", "")
             break;
 
         default:
@@ -109,6 +111,7 @@ async function think() {
         log(JSON.stringify(error))
         llm && llm.terminate()
         llm = null
+        $("#llmStatus").setAttribute("class", "")
     }
 }
 
@@ -132,6 +135,7 @@ async function speak(txt) {
             log(JSON.stringify(error))
             tts && tts.terminate()
             tts = null
+            $("#ttsStatus").setAttribute("class", "")
         }
     }
     $("#ttsStatus").classList.remove("busy")
