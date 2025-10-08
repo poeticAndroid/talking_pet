@@ -33,7 +33,10 @@ async function initLLM() {
     $("#llmStatus").classList.add("init")
     llm = new Worker('worker.js', { type: "module" })
     await runWorker(llm)
-    let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-1.7B-Instruct", { device: "webgpu", dtype: "fp16" })
+    let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-1.7B-Instruct", {
+        // device: "webgpu",
+        dtype: "fp16"
+    })
     if (result.success) {
         $("#llmStatus").classList.remove("init")
         $("#llmStatus").classList.add("idle")
