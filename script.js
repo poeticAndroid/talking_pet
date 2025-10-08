@@ -1,119 +1,119 @@
-import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5";
+import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5"
 
-let llm, tts;
-let chat = [];
+let llm, tts
+let chat = []
 
-let audioCtx, speaking;
-let ttsQueue = [];
+let audioCtx, speaking
+let ttsQueue = []
 
 async function init() {
-    document.body.addEventListener("click", initAudio);
-    $("form").addEventListener("submit", userSubmit);
+    document.body.addEventListener("click", initAudio)
+    $("form").addEventListener("submit", userSubmit)
 
-    logMessage({ role: "system", content: "You are a happy little boy." });
-    logMessage({ role: "user", content: "Hello there!" });
-    think();
+    logMessage({ role: "system", content: "You are a happy little boy." })
+    logMessage({ role: "user", content: "Hello there!" })
+    think()
 }
 
 function initAudio(e) {
-    if (!audioCtx) audioCtx = new AudioContext();
+    if (!audioCtx) audioCtx = new AudioContext()
     if (e) {
-        let osc = audioCtx.createOscillator();
-        osc.connect(audioCtx.destination);
-        osc.start();
+        let osc = audioCtx.createOscillator()
+        osc.connect(audioCtx.destination)
+        osc.start()
         setTimeout((e) => {
-            osc.stop();
-        }, 32);
-        document.body.removeEventListener("click", initAudio);
+            osc.stop()
+        }, 32)
+        document.body.removeEventListener("click", initAudio)
     }
 }
 async function initLLM() {
     if (llm) return;
-    $("#llmStatus").classList.remove("busy");
-    $("#llmStatus").classList.add("init");
-    llm = await pipeline(
-        "text-generation",
-        "HuggingFaceTB/SmolLM2-360M-Instruct",
-        {
-            device: "webgpu",
-            dtype: "q4f16"
-        }
-    );
-    $("#llmStatus").classList.remove("init");
-    $("#llmStatus").classList.add("idle");
+    $("#llmStatus").classList.remove("busy")
+    $("#llmStatus").classList.add("init")
+    llm = new Worker('worker.js', { type: "module" })
+    await runWorker(llm)
+    let result = await runWorker(llm, "init", "text-generation", "HuggingFaceTB/SmolLM2-360M-Instruct", { device: "webgpu", dtype: "q4f16" })
+    if (result.success) {
+        $("#llmStatus").classList.remove("init")
+        $("#llmStatus").classList.add("idle")
+    } else { throw result }
+    return result
 }
 
 async function initTTS() {
     if (tts) return;
-    $("#ttsStatus").classList.remove("busy");
-    $("#ttsStatus").classList.add("init");
-    tts = await pipeline("text-to-speech", "Xenova/speecht5_tts", {
+    $("#ttsStatus").classList.remove("busy")
+    $("#ttsStatus").classList.add("init")
+    tts = new Worker('worker.js', { type: "module" })
+    await runWorker(tts)
+    let result = await runWorker(tts, "init", "text-to-speech", "Xenova/speecht5_tts", {
         // device: "webgpu",
         quantized: false
-    });
-    // let audioSource = await speak("tts ready");
-    // document.body.addEventListener("click", (e) => {
-    //   console.log("ready", audioSource);
-    //   audioSource.start();
-    // });
-    $("#ttsStatus").classList.remove("init");
-    $("#ttsStatus").classList.add("idle");
+    })
+    if (result.success) {
+        $("#ttsStatus").classList.remove("init")
+        $("#ttsStatus").classList.add("idle")
+    } else { throw result }
+    return result
 }
 
+
+
 function userSubmit(e) {
-    e.preventDefault();
-    let userTxt = $("#userInp").value;
+    e.preventDefault()
+    let userTxt = $("#userInp").value
     let message = {
         role: "user",
         content: userTxt
     };
-    logMessage(message);
-    think();
-    $("#userInp").value = "";
+    logMessage(message)
+    think()
+    $("#userInp").value = ""
 }
 
 async function think() {
-    await initLLM();
-    $("#llmStatus").classList.add("busy");
-    let result = await llm(chat, {
+    await initLLM()
+    $("#llmStatus").classList.add("busy")
+    let result = await runWorker(llm, "process", chat, {
         max_new_tokens: 128,
         do_sample: true
-    });
-    $("#llmStatus").classList.remove("busy");
-    let message = result[0].generated_text.pop();
-    logMessage(message);
-    // $("#userInp").focus();
-    await speak(message.content);
+    })
+    $("#llmStatus").classList.remove("busy")
+    let message = result[0].generated_text.pop()
+    logMessage(message)
+    // $("#userInp").focus()
+    await speak(message.content)
 }
 
 async function speak(txt) {
     if (!$("#ttsEnabled").checked) return;
-    await initTTS();
+    await initTTS()
 
-    $("#ttsStatus").classList.add("busy");
-    let sentences = splitSentences(txt);
+    $("#ttsStatus").classList.add("busy")
+    let sentences = splitSentences(txt)
     let speaker_embeddings =
         "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin";
     for (let sentence of sentences) {
         if (!sentence.trim()) continue;
-        let speech = await tts(sentence.trim(), { speaker_embeddings });
-        speech.text = sentence.trim();
-        console.log("Queuing:", speech.text);
-        ttsQueue.push(speech);
-        processTtsQueue();
+        let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
+        speech.text = sentence.trim()
+        console.log("Queuing:", speech.text)
+        ttsQueue.push(speech)
+        processTtsQueue()
     }
-    $("#ttsStatus").classList.remove("busy");
+    $("#ttsStatus").classList.remove("busy")
 }
 
 function splitSentences(txt) {
-    let sentences = [""];
+    let sentences = [""]
     let quot,
         wrap,
         parens = 0;
     for (let char of txt) {
         sentences[sentences.length - 1] = (
             sentences[sentences.length - 1] + char
-        ).trimStart();
+        ).trimStart()
         if (quot || parens) {
             switch (char) {
                 case quot:
@@ -135,7 +135,7 @@ function splitSentences(txt) {
                     break;
             }
             if (wrap && !(quot || parens)) {
-                sentences.push("");
+                sentences.push("")
                 wrap = false;
             }
         } else {
@@ -157,61 +157,82 @@ function splitSentences(txt) {
                 case ":":
                 case ";":
                     if (sentences[sentences.length - 1] == char)
-                        sentences[sentences.length - 2] += sentences.pop();
-                    sentences.push("");
+                        sentences[sentences.length - 2] += sentences.pop()
+                    sentences.push("")
                     break;
             }
         }
     }
-    if (!sentences[sentences.length - 1].trim()) sentences.pop();
+    if (!sentences[sentences.length - 1].trim()) sentences.pop()
     return sentences;
 }
 
 function processTtsQueue() {
     if (speaking) return;
     if (ttsQueue.length == 0) return;
-    let speech = ttsQueue.shift();
+    let speech = ttsQueue.shift()
 
-    initAudio();
+    initAudio()
     speaking = true;
     let audioBuffer = audioCtx.createBuffer(
         1,
         speech.audio.length,
         speech.sampling_rate
-    );
-    audioBuffer.copyToChannel(speech.audio, 0);
-    let audioSource = audioCtx.createBufferSource();
+    )
+    audioBuffer.copyToChannel(speech.audio, 0)
+    let audioSource = audioCtx.createBufferSource()
     audioSource.buffer = audioBuffer;
-    audioSource.connect(audioCtx.destination);
-    audioSource.start();
+    audioSource.connect(audioCtx.destination)
+    audioSource.start()
     audioSource.addEventListener("ended", (e) => {
         speaking = false;
-        audioSource.disconnect(audioCtx.destination);
-        processTtsQueue();
-    });
+        audioSource.disconnect(audioCtx.destination)
+        processTtsQueue()
+    })
+}
+
+function runWorker(worker, cmd, ...args) {
+    if (cmd) worker.postMessage({ cmd: cmd, args: args })
+    return new Promise((resolve, reject) => {
+        const onMessage = (e) => {
+            cleanup()
+            resolve(e.data)
+        };
+        const onError = (err) => {
+            cleanup()
+            reject(err)
+        };
+        const cleanup = () => {
+            worker.removeEventListener('message', onMessage)
+            worker.removeEventListener('error', onError)
+        };
+
+        worker.addEventListener('message', onMessage)
+        worker.addEventListener('error', onError)
+    })
 }
 
 function logMessage(message) {
-    log(message.content, message.role);
-    chat.push(message);
+    log(message.content, message.role)
+    chat.push(message)
 }
 
 function log(str, src) {
-    let el = document.createElement("p");
+    let el = document.createElement("p")
     el.textContent = str;
     if (src) {
-        el.classList.add(src);
+        el.classList.add(src)
         el.innerHTML = `<strong>${src}:</strong> ` + el.innerHTML;
     }
-    $("#log").appendChild(el);
-    window.scrollBy(0, 1024);
+    $("#log").appendChild(el)
+    window.scrollBy(0, 1024)
 }
 
 function $(selector) {
-    return document.querySelector(selector);
+    return document.querySelector(selector)
 }
 function $$(selector) {
-    return document.querySelectorAll(selector);
+    return document.querySelectorAll(selector)
 }
 
-init();
+init()
