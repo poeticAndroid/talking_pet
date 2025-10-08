@@ -144,6 +144,7 @@ async function speak(txt) {
         try {
             let span = findSentence(sentence)
             span.classList.add("rendering")
+            $("#ttsStatus").classList.add("busy")
             let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
             speech.text = sentence.trim()
             console.log("Queuing:", speech.text)
