@@ -1,0 +1,46 @@
+html {
+    background: #012;
+    color: #def;
+    font-family: monospace;
+    font-size: 20px;
+}
+
+#userInp {
+    background: #123;
+    color: #eff;
+    font-family: inherit;
+    font-size: 1.5em;
+
+    border: 0;
+    display: block;
+    margin: auto;
+    width: 90vw;
+}
+
+.system {
+    background: #321;
+}
+
+.user {
+    background: #123;
+}
+
+.assistant {
+    background: #001;
+}
+
+.status {
+    text-align: center;
+}
+
+.status .idle {
+    background: #066;
+}
+
+.status .init {
+    background: #630;
+}
+
+.status .busy {
+    background: #0f0;
+}
