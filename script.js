@@ -257,7 +257,7 @@ function runWorker(worker, cmd, ...args) {
 function logMessage(message) {
     let parts = splitSentences(message.content)
     let html = ""
-    for (let part of parts) html += `<span class="sentence">${escape(part)}</span> `
+    for (let part of parts) html += `<span class="sentence">${escape(part)}</span>`
     log(html, message.role, true)
     chat.push(message)
 }
