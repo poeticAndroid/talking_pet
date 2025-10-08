@@ -29,8 +29,16 @@ html {
     background: #001;
 }
 
+.rendering {
+    text-decoration: underline dotted;
+}
+
+.queued {
+    text-decoration: underline dashed;
+}
+
 .speaking {
-    text-decoration: underline;
+    text-decoration: underline solid;
 }
 
 .status {

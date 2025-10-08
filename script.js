@@ -75,6 +75,7 @@ function userSubmit(e) {
     let parts = userTxt.split(" ")
     let message
     switch (parts[0]) {
+        case "/stop":
         case "/unload":
             llm && llm.terminate()
             llm = null
@@ -141,10 +142,14 @@ async function speak(txt) {
     for (let sentence of sentences) {
         if (!sentence.trim()) continue;
         try {
+            let span = findSentence(sentence)
+            span.classList.add("rendering")
             let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
             speech.text = sentence.trim()
             console.log("Queuing:", speech.text)
             ttsQueue.push(speech)
+            span.classList.remove("rendering")
+            span.classList.add("queued")
             processTtsQueue()
         } catch (error) {
             log(JSON.stringify(error))
@@ -233,17 +238,12 @@ function processTtsQueue() {
     audioSource.buffer = audioBuffer
     audioSource.connect(audioCtx.destination)
     audioSource.start()
-    let spans = $$(".sentence")
-    let i = spans.length
-    while (i--) {
-        if (spans[i].textContent.trim() == speech.text) {
-            spans[i].classList.add("speaking")
-            break;
-        }
-    }
+    let span = findSentence(speech.text)
+    span.classList.remove("queued")
+    span.classList.add("speaking")
     audioSource.addEventListener("ended", (e) => {
         speaking = false
-        spans[i].classList.remove("speaking")
+        span.classList.remove("speaking")
         audioSource.disconnect(audioCtx.destination)
         processTtsQueue()
     })
@@ -271,6 +271,17 @@ function runWorker(worker, cmd, ...args) {
         worker.addEventListener('message', onMessage)
         worker.addEventListener('error', onError)
     })
+}
+
+function findSentence(txt) {
+    let spans = $$(".sentence")
+    let i = spans.length
+    while (i--) {
+        if (spans[i].textContent.trim() == txt.trim()) {
+            break;
+        }
+    }
+    return spans[i]
 }
 
 function logMessage(message) {
