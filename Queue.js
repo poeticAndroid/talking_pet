@@ -105,8 +105,14 @@ export default class Queue {
         if (this.listeners.indexOf(listener) >= 0) this.listeners.splice(this.listeners.indexOf(listener), 1)
     }
     emitEvent(event) {
-        for (let listener of this.listeners) {
-            listener(this)
-        }
+        if (this._emitting) return;
+        this._emitting = setTimeout(() => {
+            for (let listener of this.listeners) {
+                listener(this)
+            }
+            this._emitting = false
+        })
     }
+
+    _emitting
 }

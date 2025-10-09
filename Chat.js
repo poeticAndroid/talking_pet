@@ -20,7 +20,7 @@ export default class Chat extends Queue {
                 message.id = id
             }
             let sentences = this.logMessage(message)
-            if (message.role == "assistant")
+            if (message.role == "assistant" && this.pipes.length)
                 sentences.forEach(sentence => {
                     this.outbox.push(sentence)
                 })
@@ -37,7 +37,7 @@ export default class Chat extends Queue {
         message.id = message.id || _id++
         let sentences = this.splitSentences(message.content).map(text => ({ id: _id++, input: text }))
         let html = ""
-        for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${message.role == "assistant" ? "unread" : ""}">${this.escape(sentence.input)}</span>`
+        for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${(message.role == "assistant" && this.pipes.length) ? "unread" : ""}">${this.escape(sentence.input)}</span>`
         let el = this.log(html, message.role, true)
         el.id = `message_${message.id}`
         this.messages.push(message)
