@@ -29,16 +29,23 @@ html {
     background: #001;
 }
 
+.unread {
+    opacity: .125;
+}
+
 .rendering {
     text-decoration: underline dotted;
+    opacity: .25;
 }
 
 .queued {
     text-decoration: underline dashed;
+    opacity: .5;
 }
 
 .speaking {
     text-decoration: underline solid;
+    opacity: 1;
 }
 
 .status {

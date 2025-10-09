@@ -70,7 +70,7 @@ async function initTTS() {
 
 
 function userSubmit(e) {
-    e && e.preventDefault()
+    e?.preventDefault()
     let userTxt = $("#userInp").value
     let parts = userTxt.split(" ")
     let message
@@ -143,6 +143,7 @@ async function speak(txt) {
         if (!sentence.trim()) continue;
         try {
             let span = findSentence(sentence)
+            span?.classList.remove("unread")
             span?.classList.add("rendering")
             $("#ttsStatus").classList.add("busy")
             let speech = await runWorker(tts, "process", sentence.trim(), { speaker_embeddings })
@@ -290,7 +291,7 @@ function logMessage(message) {
     message.id = _id++
     let parts = splitSentences(message.content)
     let html = ""
-    for (let part of parts) html += `<span class="sentence">${escape(part)}</span>`
+    for (let part of parts) html += `<span class="sentence ${message.role == "assistant" && $("#ttsEnabled").checked ? "unread" : ""}">${escape(part)}</span>`
     let el = log(html, message.role, true)
     el.id = `message_${message.id}`
     chat.push(message)
