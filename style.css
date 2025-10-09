@@ -17,6 +17,7 @@ html {
     width: 90vw;
 }
 
+
 .system {
     background: #321;
 }
@@ -28,6 +29,7 @@ html {
 .assistant {
     background: #001;
 }
+
 
 .unread {
     opacity: .125;
@@ -47,6 +49,7 @@ html {
     text-decoration: underline solid;
     opacity: 1;
 }
+
 
 .status {
     text-align: center;

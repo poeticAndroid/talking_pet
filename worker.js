@@ -4,17 +4,26 @@ import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers
 let ai
 
 self.addEventListener("message", async (e) => {
+    // console.log("worker got:", e.data)
     switch (e.data.cmd) {
         case "init":
-            ai = await pipeline(...e.data.args)
-            self.postMessage({ success: true, id: e.data.id })
+            try {
+                ai = await pipeline(...e.data.args)
+                self.postMessage({ success: true, id: e.data.id })
+            } catch (error) {
+                self.postMessage({ success: false, status: error, id: e.data.id })
+            }
             break;
 
         case "process":
-            let res = await ai(...e.data.args)
-            res.success = true
-            res.id = e.data.id
-            self.postMessage(res)
+            try {
+                let res = await ai(...e.data.args)
+                res.success = true
+                res.id = e.data.id
+                self.postMessage(res)
+            } catch (error) {
+                self.postMessage({ success: false, status: error, id: e.data.id })
+            }
             break;
 
         default:
@@ -23,4 +32,4 @@ self.addEventListener("message", async (e) => {
     }
 });
 
-self.postMessage({ ready: true })
+self.postMessage({ success: true, status: "ready" })
