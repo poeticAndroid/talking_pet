@@ -28,6 +28,7 @@ async function init() {
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
     speaker.addEventListener("statuschange", updateStatus)
+    setTimeout(updateStatus, 1024, llm)
 
     chat.queue({ role: "system", content: "You are an adorable pet that can talk." })
     chat.queue({ role: "user", content: "Hello there!" })
@@ -78,13 +79,16 @@ function userSubmit(e) {
             speaker.shutdown()
             break;
 
-
         case "/edit":
             message = chat.pop()
             sendAs = message?.role || "system"
             setTimeout(() => { $("#userInp").value = message?.content })
             break;
 
+
+        case "/forever":
+            userTxt = ""
+            setTimeout(() => { $("#userInp").value = "/forever" })
         default:
             if (userTxt.trim()) {
                 message = {
