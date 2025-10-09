@@ -160,6 +160,7 @@ async function speak(txt) {
         }
     }
     $("#ttsStatus").classList.remove("busy")
+    if ($("#userInp").value == "/forever") think()
 }
 
 function splitSentences(txt) {
