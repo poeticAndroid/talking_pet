@@ -34,6 +34,7 @@ export default class Speaker extends Queue {
             let span = this.container?.querySelector("#sentence_" + speech.id)
             span?.classList.remove("queued")
             span?.classList.add("speaking")
+            span?.scrollIntoView(true)
             this.audioSource.addEventListener("ended", e => {
                 span?.classList.remove("speaking")
                 this.audioSource.disconnect(this.audioCtx.destination)

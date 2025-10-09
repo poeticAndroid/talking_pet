@@ -28,6 +28,7 @@ export default class Queue {
         if (this.isInitialized) {
             this.isInitialized = false
             await this.shutdown()
+            this.isProcessing = true
         }
         this.isInitialized = !!(await this.init())
         this.isProcessing = !this.isInitialized
@@ -66,7 +67,9 @@ export default class Queue {
     }
 
     async shutdown() {
+        this.isProcessing = false
         this.isInitialized = false
+        this.clear()
         this.emitEvent("statuschange")
         return this.isInitialized
     }

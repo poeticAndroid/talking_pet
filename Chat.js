@@ -27,6 +27,12 @@ export default class Chat extends Queue {
         }
     }
 
+    pop() {
+        let message = this.messages.pop()
+        this.container?.querySelector("#message_" + message?.id)?.parentNode.removeChild(this.container?.querySelector("#message_" + message?.id))
+        return message
+    }
+
     logMessage(message) {
         message.id = message.id || _id++
         let sentences = this.splitSentences(message.content).map(text => ({ id: _id++, input: text }))

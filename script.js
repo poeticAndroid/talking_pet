@@ -5,6 +5,8 @@ import Speaker from "./Speaker.js"
 
 let llm, chat, tts, speaker
 let currentSentence
+let sendAs = "user"
+let thinking
 
 async function init() {
     // document.body.addEventListener("click", initAudio)
@@ -57,10 +59,14 @@ function updateStatus(q) {
         currentSentence?.classList.remove("unread")
         currentSentence?.classList.add("rendering")
     }
+
+    if ($("#userInp").value == "/forever" && !(thinking || tts.isProcessing))
+        setTimeout(() => { think() })
 }
 
 function userSubmit(e) {
     e?.preventDefault()
+    if (thinking) return
     let userTxt = $("#userInp").value
     let parts = userTxt.split(" ")
     let message
@@ -69,36 +75,36 @@ function userSubmit(e) {
         case "/unload":
             llm.shutdown()
             tts.shutdown()
+            speaker.shutdown()
             break;
 
 
-        // case "/undo":
-        //     do {
-        //         message = chat.pop()
-        //         $("#message_" + message.id).parentNode.removeChild($("#message_" + message.id))
-        //     } while (message.role != "user")
-        //     setTimeout(() => {
-        //         $("#userInp").value = message.content
-        //     })
-        //     break;
+        case "/edit":
+            message = chat.pop()
+            sendAs = message?.role || "system"
+            setTimeout(() => { $("#userInp").value = message?.content })
+            break;
 
         default:
             if (userTxt.trim()) {
                 message = {
-                    role: "user",
+                    role: sendAs,
                     content: userTxt
                 }
                 chat.queue(message)
             }
-            think()
+            if (sendAs == "user") think()
+            else sendAs = "user"
             break;
     }
     $("#userInp").value = ""
 }
 
 async function think() {
+    if (thinking) return
+    thinking = true
     await llm.queue({ input: chat.messages })
-    // console.log("think:", result)
+    thinking = llm.isProcessing
 }
 
 
