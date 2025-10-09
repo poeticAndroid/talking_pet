@@ -80,6 +80,13 @@ function userSubmit(e) {
     let parts = userTxt.split(" ")
     let message
     switch (parts[0]) {
+        case "/help":
+            chat.queue("/help - show this message")
+            chat.queue("/unload - unload all AI models")
+            chat.queue("/edit - edit last message")
+            chat.queue("/forever - keep the AI going forever")
+            break;
+
         case "/stop":
         case "/unload":
             llm.shutdown()
