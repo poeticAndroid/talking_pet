@@ -117,6 +117,8 @@ function userSubmit(e) {
             break;
 
         case "/edit":
+            if (tts.isProcessing) tts.shutdown()
+            speaker.clear()
             message = chat.pop()
             sendAs = message?.role || "system"
             setTimeout(() => { $("#userInp").value = message?.content })
