@@ -14,9 +14,9 @@ export default class Speaker extends Queue {
             osc.connect(this.audioCtx.destination)
             osc.start()
             setTimeout((e) => { osc.stop() }, 32)
-            this.container.removeEventListener("click", beep)
+            document.body.removeEventListener("click", beep)
         }).bind(this)
-        this.container.addEventListener("click", beep)
+        document.body.addEventListener("click", beep)
     }
 
     process(speech) {
@@ -36,7 +36,10 @@ export default class Speaker extends Queue {
             span?.classList.add("speaking")
             span?.scrollIntoView(true)
             this.audioSource.addEventListener("ended", e => {
+                span?.classList.remove("unread")
+                span?.classList.remove("queued")
                 span?.classList.remove("speaking")
+                span?.classList.add("read")
                 this.audioSource.disconnect(this.audioCtx.destination)
                 this.audioSource = null
                 resolve()

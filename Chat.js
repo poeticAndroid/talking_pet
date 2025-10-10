@@ -3,6 +3,7 @@ import Queue from "./Queue.js"
 export default class Chat extends Queue {
     messages = []
     container = null
+    lastText
 
     constructor(container = this.container) {
         super()
@@ -12,8 +13,10 @@ export default class Chat extends Queue {
     process(message) {
         // console.log("Chat got:", message)
         if (typeof message == "string") {
-            this.log(message)
+            if (this.lastText) this.lastText.innerHTML += '<br/>' + this.escape(message)
+            else this.lastText = this.log(message)
         } else {
+            this.lastText = null
             if (message.success) {
                 let id = message.id
                 message = message[0].generated_text.pop()
@@ -29,15 +32,54 @@ export default class Chat extends Queue {
 
     pop() {
         let message = this.messages.pop()
-        this.container?.querySelector("#message_" + message?.id)?.parentNode.removeChild(this.container?.querySelector("#message_" + message?.id))
+        if (this.container) {
+            let el
+            do {
+                el = this.container.lastElementChild
+                this.container.removeChild(el)
+            } while (el.id != "message_" + message.id)
+        }
         return message
+    }
+
+    shutdown() {
+        if (!this.container) return super.shutdown();
+        let unread = this.container.querySelector(".unread")
+        if (!unread) return super.shutdown();
+        let messageEl = unread.parentElement
+        if (unread.classList.contains("speaking")) {
+            unread.textContent = unread.textContent.slice(0, Math.round(unread.textContent.length / 2)) + "..."
+            unread.classList.replace("unread", "read")
+        }
+        messageEl.querySelectorAll(".unread").forEach(el => el.parentElement.removeChild(el))
+
+        let message = this.messages[this.messages.length - 1]
+        while (messageEl.id != "message_" + message.id) {
+            this.pop()
+            message = this.messages[this.messages.length - 1]
+        }
+
+        message.content = messageEl.textContent.slice(messageEl.textContent.indexOf(":") + 1).trim()
+
+        return super.shutdown()
+    }
+
+    readAll() {
+        if (!this.container) return;
+        this.container.querySelectorAll(".unread").forEach(el => {
+            el.classList.remove("unread")
+            el.classList.remove("rendering")
+            el.classList.remove("queued")
+            el.classList.remove("speaking")
+            el.classList.add("read")
+        })
     }
 
     logMessage(message) {
         message.id = message.id || _id++
         let sentences = this.splitSentences(message.content).map(text => ({ id: _id++, input: text }))
         let html = ""
-        for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${(message.role == "assistant" && this.pipes.length) ? "unread" : ""}">${this.escape(sentence.input)}</span>`
+        for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${(message.role == "assistant" && this.pipes.length) ? "unread" : "read"}">${this.escape(sentence.input)}</span>`
         let el = this.log(html, message.role, true)
         el.id = `message_${message.id}`
         this.messages.push(message)

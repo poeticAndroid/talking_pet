@@ -14,6 +14,7 @@ async function init() {
     $("#ttsEnabled").addEventListener("change", e => {
         if ($("#ttsEnabled").checked) chat.pipeTo(tts)
         else chat.removePipeTo(tts)
+        chat.shutdown()
         tts.shutdown()
         speaker.shutdown()
     })
@@ -30,8 +31,10 @@ async function init() {
         }))
             .pipeTo(speaker = new Speaker($("#log")))
 
-    if ($("#ttsEnabled").checked) chat.pipeTo(tts)
-    else chat.removePipeTo(tts)
+    setTimeout(() => {
+        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
+        else chat.removePipeTo(tts)
+    }, 1024)
 
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
@@ -59,39 +62,58 @@ function updateStatus(q) {
     }
 
     if (currentSentence != $("#sentence_" + tts.currentTask?.id)) {
-        currentSentence?.classList.remove("unread")
         currentSentence?.classList.remove("rendering")
         if (!currentSentence?.classList.contains("speaking"))
             currentSentence?.classList.add("queued")
 
         currentSentence = $("#sentence_" + tts.currentTask?.id)
-        currentSentence?.classList.remove("unread")
         currentSentence?.classList.add("rendering")
     }
 
     if ($("#userInp").value == "/forever" && !(thinking || tts.isProcessing))
-        setTimeout(() => { if (!(thinking || tts.isProcessing)) think() }, 1024)
+        setTimeout(() => { think() }, 1024)
 }
 
 function userSubmit(e) {
     e?.preventDefault()
-    if (thinking || llm.isProcessing) return
     let userTxt = $("#userInp").value
     let parts = userTxt.split(" ")
     let message
     switch (parts[0]) {
         case "/help":
             chat.queue("/help - show this message")
+            chat.queue("/stop - interrupt the conversation")
+            chat.queue("/clear - clear the chat")
             chat.queue("/unload - unload all AI models")
+            chat.queue("/reload - restart LLM model")
             chat.queue("/edit - edit last message")
             chat.queue("/forever - keep the AI going forever")
             break;
 
         case "/stop":
+            if (speaker.isProcessing) setTimeout(e => {
+                if ($("#userInp").value.slice(0, 1) != "/")
+                    $("#userInp").value = "*interupts* "
+            })
+            chat.shutdown()
+            tts.clear()
+            if (tts.isProcessing) tts.shutdown()
+            speaker.shutdown()
+            break;
+
+        case "/clear":
+            location.reload()
         case "/unload":
             llm.shutdown()
+            chat.readAll()
             tts.shutdown()
             speaker.shutdown()
+            thinking = false
+            break;
+
+        case "/reload":
+            thinking = false
+            llm.restart()
             break;
 
         case "/edit":
@@ -105,6 +127,11 @@ function userSubmit(e) {
             userTxt = ""
             setTimeout(() => { $("#userInp").value = "/forever" })
         default:
+            if (userTxt.trim().slice(0, 1) == "/") {
+                chat.queue(`Sorry. I don't know how to ${userTxt}.`)
+                break;
+            }
+            if (thinking || llm.isProcessing) return
             if (userTxt.trim()) {
                 message = {
                     role: sendAs,

@@ -67,9 +67,9 @@ export default class Queue {
     }
 
     async shutdown() {
+        this.clear()
         this.isProcessing = false
         this.isInitialized = false
-        this.clear()
         this.emitEvent("statuschange")
         return this.isInitialized
     }
@@ -107,11 +107,11 @@ export default class Queue {
     emitEvent(event) {
         if (this._emitting) return;
         this._emitting = setTimeout(() => {
+            this._emitting = false
             for (let listener of this.listeners) {
                 listener(this)
             }
-            this._emitting = false
-        })
+        }, 32)
     }
 
     _emitting
