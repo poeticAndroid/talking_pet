@@ -7,10 +7,13 @@ let llm, chat, tts, speaker
 let currentSentence
 let sendAs = "user"
 let thinking
+let inputHeight = 64
 
 async function init() {
     // document.body.addEventListener("click", initAudio)
     $("form").addEventListener("submit", userSubmit)
+    $("#userInp").addEventListener("keypress", e => { if (e.key == "Enter" && !e.shiftKey) userSubmit(e) })
+    inputAutoHeight()
     $("#ttsEnabled").addEventListener("change", e => {
         if ($("#ttsEnabled").checked) chat.pipeTo(tts)
         else chat.removePipeTo(tts)
@@ -76,10 +79,10 @@ function updateStatus(q) {
 
 function userSubmit(e) {
     e?.preventDefault()
-    let userTxt = $("#userInp").value
-    let parts = userTxt.split(" ")
+    let userTxt = $("#userInp").value.trim()
+    let parts = userTxt.split(/\s+/)
     let message
-    switch (parts[0]) {
+    switch (parts[0].toLowerCase()) {
         case "/help":
             chat.queue("/help - show this message")
             chat.queue("/stop - interrupt the conversation")
@@ -117,6 +120,7 @@ function userSubmit(e) {
             break;
 
         case "/edit":
+            chat.readAll()
             if (tts.isProcessing) tts.shutdown()
             speaker.clear()
             message = chat.pop()
@@ -155,6 +159,21 @@ async function think() {
     thinking = llm.isProcessing
 }
 
+let _inputLength = 1024
+function inputAutoHeight() {
+    requestAnimationFrame(inputAutoHeight)
+    let el = $("#userInp")
+    el.scrollTop += 1024
+    let offset = el.scrollTop
+    if (offset) {
+        inputHeight += offset
+        _inputLength = el.value.length
+    } else if (_inputLength > el.value.length) {
+        inputHeight--
+    }
+    el.style.height = inputHeight + "px"
+    scrollBy(0, offset)
+}
 
 
 function $(selector) {

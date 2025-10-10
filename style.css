@@ -15,6 +15,7 @@ html {
     display: block;
     margin: auto;
     width: 90vw;
+    overflow: hidden;
 }
 
 
