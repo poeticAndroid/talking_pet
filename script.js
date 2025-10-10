@@ -14,7 +14,7 @@ async function init() {
     $("#ttsEnabled").addEventListener("change", e => {
         if ($("#ttsEnabled").checked) chat.pipeTo(tts)
         else chat.removePipeTo(tts)
-        chat.shutdown()
+        chat.restart()
         tts.shutdown()
         speaker.shutdown()
     })
@@ -95,7 +95,7 @@ function userSubmit(e) {
                 if ($("#userInp").value.slice(0, 1) != "/")
                     $("#userInp").value = "*interupts* "
             })
-            chat.shutdown()
+            chat.restart()
             tts.clear()
             if (tts.isProcessing) tts.shutdown()
             speaker.shutdown()
