@@ -166,8 +166,7 @@ function userSubmit(e) {
 
         case "/stop":
             if (speaker.isProcessing) setTimeout(e => {
-                if ($("#userInp").value.slice(0, 1) != "/")
-                    $("#userInp").value = "*interupts* "
+                $("#userInp").value = "*interupts* "
             })
             chat.restart()
             tts.clear()
@@ -178,6 +177,7 @@ function userSubmit(e) {
         case "/reboot":
             location.reload()
             chat.queue(`Rebooting ...`)
+        case "/shutdown":
         case "/unload":
             llm.shutdown()
             chat.readAll()
