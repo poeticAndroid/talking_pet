@@ -119,6 +119,7 @@ function userSubmit(e) {
 
         case "/rm":
             urlfs.delete(parts[1])
+            chat.queue(`${parts[1]} deleted!`)
             break;
 
         case "/open":
@@ -138,6 +139,7 @@ function userSubmit(e) {
                     })
                 }
                 urlfs.writeText(file, content)
+                chat.queue(`${file} saved!`)
             } else {
                 setTimeout(e => {
                     $("#userInp").value = `/save ${file}\n${urlfs.readText(file)}`
@@ -149,6 +151,7 @@ function userSubmit(e) {
             file = completeFile(parts[1] || lastFile)
             if (!file) { chat.queue("No filename specified!"); break; }
             loadConfig(file)
+            chat.queue(`${file} loaded!`)
             break;
 
         case "/log":
@@ -174,17 +177,20 @@ function userSubmit(e) {
 
         case "/reboot":
             location.reload()
+            chat.queue(`Rebooting ...`)
         case "/unload":
             llm.shutdown()
             chat.readAll()
             tts.shutdown()
             speaker.shutdown()
             thinking = false
+            chat.queue(`Models unloaded.`)
             break;
 
         case "/reload":
             thinking = false
             llm.restart()
+            chat.queue(`LLM restarted.`)
             break;
 
         case "/edit":
@@ -223,6 +229,8 @@ function userSubmit(e) {
 function completeFile(filename = "default_llm") {
     let dir, file = filename.toLowerCase()
     if (!urlfs.readText(file)) {
+        if (lastFile.slice(0, file.length) == file) file = lastFile
+        if (chatFile.slice(0, file.length) == file) file = chatFile
         dir = urlfs.dirname(file)
         for (let f of urlfs.ls(dir).sort()) {
             f = dir + f
