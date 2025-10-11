@@ -16,7 +16,7 @@ export default class Queue {
     queue(task) {
         this.inbox.push(task);
         this.emitEvent("statuschange")
-        return this.notify()
+        setTimeout(this.notify)
     }
 
     clear() {
@@ -34,9 +34,10 @@ export default class Queue {
         try {
             this.isInitialized = !!(await this.init())
         } catch (error) {
+            console.error("restart err!", error)
             this.isInitialized = false
             this.shutdown()
-            this.deliver(error, this.errPipes)
+            this.deliverErr(error)
         }
         this.isProcessing = false
         this.emitEvent("statuschange")
@@ -56,10 +57,11 @@ export default class Queue {
             product = await this.process(this.currentTask)
             this.deliver(product)
         } catch (error) {
+            console.error("process err!", error)
             this.isInitialized = false
             this.shutdown()
             this.emitEvent("statuschange")
-            this.deliver(error, this.errPipes)
+            this.deliverErr(error)
         }
         return product
     }
@@ -83,11 +85,11 @@ export default class Queue {
         return this.isInitialized
     }
 
-    deliver(product, pipes = this.pipes) {
+    deliver(product) {
         if (product) this.outbox.push(product)
-        if (pipes.length) {
+        if (this.pipes.length) {
             while (product = this.outbox.shift()) {
-                for (let pipe of pipes) {
+                for (let pipe of this.pipes) {
                     pipe.queue(product)
                 }
             }
@@ -96,6 +98,17 @@ export default class Queue {
         this.isProcessing = false
         if (this.inbox.length == 0) this.emitEvent("statuschange")
         setTimeout(this.notify)
+    }
+
+    deliverErr(err) {
+        if (this.errPipes.length) {
+            for (let pipe of this.errPipes) {
+                pipe.queue(err)
+            }
+        }
+        this.currentTask = null
+        this.isProcessing = false
+        this.emitEvent("statuschange")
     }
 
     pipeTo(queue) {

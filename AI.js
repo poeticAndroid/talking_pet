@@ -26,6 +26,7 @@ export default class AI extends Queue {
 
     process(task) {
         return new Promise((resolve, reject) => {
+            if (!this.worker) reject({ success: false, status: new Error("model not loaded!") })
             this.resolve = resolve
             this.reject = reject
             this.worker.postMessage({ cmd: "process", args: [task.input, this.config] })
