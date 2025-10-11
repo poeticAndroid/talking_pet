@@ -31,6 +31,10 @@ html {
     background: #001;
 }
 
+.error {
+    color: red;
+}
+
 
 .unread {
     opacity: .125;

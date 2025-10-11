@@ -24,8 +24,8 @@ export default class Chat extends Queue {
                 message.id = id
             }
             if (message.success === false) {
-                message.role = "error"
-                message.content = message.status?.stack || JSON.stringify(message.status, null, 2)
+                let el = this.log("ERR! " + message.status?.stack || JSON.stringify(message.status, null, 2))
+                el.classList.add("error")
             }
             let sentences = this.logMessage(message)
             if (message.role == "assistant" && this.pipes.length)
