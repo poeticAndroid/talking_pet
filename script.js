@@ -9,11 +9,16 @@ let sendAs = "user"
 let thinking
 let inputHeight = 64
 
+let llmFile = "default_llm.json"
+let ttsFile = "default_tts.json"
+let chatFile = "default_chat.json"
+let lastFile = llmFile
+
 async function init() {
     // document.body.addEventListener("click", initAudio)
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
-        if (e.key == "Tab") {
+        if (e.key == "Tab" && e.target.value) {
             e.preventDefault()
             let userTxt = $("#userInp").value.trim()
             let parts = userTxt.split(/\s+/)
@@ -33,8 +38,10 @@ async function init() {
 
     llm = new AI()
     llm.pipeTo(chat = new Chat($("#log")))
+    llm.pipeErrTo(chat)
     tts = new AI()
     tts.pipeTo(speaker = new Speaker($("#log")))
+    tts.pipeErrTo(chat)
 
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
@@ -43,16 +50,10 @@ async function init() {
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
     await urlfs.preload("default.json", "default_llm.json", "default_tts.json", "default_chat.json")
-    loadConfig("default_llm.json")
-    loadConfig("default_tts.json")
-    loadConfig("default_chat.json")
-
-    setTimeout(() => {
-        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
-        else chat.removePipeTo(tts)
-        // think()
-    }, 1024)
-
+    loadConfig(llmFile)
+    loadConfig(ttsFile)
+    loadConfig(chatFile)
+    lastFile = llmFile
 }
 
 function updateStatus(q) {
@@ -96,8 +97,8 @@ function userSubmit(e) {
             chat.queue("/ls      - list files")
             chat.queue("/rm      - delete file")
             chat.queue("/open    - open file for editing")
-            chat.queue("/load    - load config file")
-            chat.queue("/log     - generate chat config file")
+            chat.queue("/load    - load chat or config file")
+            chat.queue("/log     - generate chat file")
             chat.queue("/stop    - interrupt the conversation")
             chat.queue("/reboot  - restart the app")
             chat.queue("/unload  - unload all AI models")
@@ -112,7 +113,7 @@ function userSubmit(e) {
             parts[1] = null
         case "/ls":
             file = completeFile(parts[1] || "./")
-            chat.queue(`Directory listing of ${urlfs.absUrl(file)}:`)
+            chat.queue(`Directory listing of ${urlfs.absUrl(file).replace(location.toString(), "~/")}:`)
             urlfs.ls(file).sort().forEach(entry => chat.queue(entry))
             break;
 
@@ -122,7 +123,7 @@ function userSubmit(e) {
 
         case "/open":
         case "/save":
-            file = canonFile(parts[1] || "default_llm")
+            file = canonFile(parts[1] || lastFile)
             if (!file) {
                 chat.queue("No filename specified!")
                 break;
@@ -145,13 +146,13 @@ function userSubmit(e) {
             break;
 
         case "/load":
-            file = completeFile(parts[1] || "default_llm")
+            file = completeFile(parts[1] || lastFile)
             if (!file) { chat.queue("No filename specified!"); break; }
             loadConfig(file)
             break;
 
         case "/log":
-            file = completeFile(parts[1] || "default_chat")
+            file = completeFile(parts[1] || chatFile)
             content = { task: "chat" }
             content.messages = JSON.parse(JSON.stringify(chat.messages))
             content.messages.forEach(message => delete message.id)
@@ -234,6 +235,21 @@ function completeFile(filename = "default_llm") {
 function canonFile(filename = ".", ext = ".json") {
     filename = filename.toLowerCase()
     if (filename.slice(-ext.length) != ext) filename += ext
+    lastFile = filename
+    if (urlfs.readJson(filename)) {
+        switch (urlfs.readJson(filename).task) {
+            case "chat":
+                chatFile = filename
+                break;
+            case "text-generation":
+                llmFile = filename
+                break;
+
+            case "text-to-speech":
+                ttsFile = filename
+                break;
+        }
+    }
     return filename
 }
 

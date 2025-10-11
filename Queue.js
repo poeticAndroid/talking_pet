@@ -2,6 +2,7 @@ export default class Queue {
     inbox = []
     outbox = []
     pipes = []
+    errPipes = []
     listeners = []
 
     isInitialized = false
@@ -30,8 +31,14 @@ export default class Queue {
             await this.shutdown()
             this.isProcessing = true
         }
-        this.isInitialized = !!(await this.init())
-        this.isProcessing = !this.isInitialized
+        try {
+            this.isInitialized = !!(await this.init())
+        } catch (error) {
+            this.isInitialized = false
+            this.shutdown()
+            this.deliver(error, this.errPipes)
+        }
+        this.isProcessing = false
         this.emitEvent("statuschange")
         setTimeout(this.notify)
         return this.isInitialized
@@ -51,6 +58,8 @@ export default class Queue {
         } catch (error) {
             this.isInitialized = false
             this.shutdown()
+            this.emitEvent("statuschange")
+            this.deliver(error, this.errPipes)
         }
         return product
     }
@@ -74,11 +83,11 @@ export default class Queue {
         return this.isInitialized
     }
 
-    deliver(product) {
+    deliver(product, pipes = this.pipes) {
         if (product) this.outbox.push(product)
-        if (this.pipes.length) {
+        if (pipes.length) {
             while (product = this.outbox.shift()) {
-                for (let pipe of this.pipes) {
+                for (let pipe of pipes) {
                     pipe.queue(product)
                 }
             }
@@ -95,6 +104,14 @@ export default class Queue {
     }
     removePipeTo(queue) {
         if (this.pipes.indexOf(queue) >= 0) this.pipes.splice(this.pipes.indexOf(queue), 1)
+    }
+
+    pipeErrTo(queue) {
+        if (this.errPipes.indexOf(queue) < 0) this.errPipes.push(queue)
+        return queue
+    }
+    removePipeErrTo(queue) {
+        if (this.errPipes.indexOf(queue) >= 0) this.errPipes.splice(this.errPipes.indexOf(queue), 1)
     }
 
     addEventListener(event, listener) {

@@ -23,6 +23,10 @@ export default class Chat extends Queue {
                 message = message[0].generated_text.pop()
                 message.id = id
             }
+            if (message.success === false) {
+                message.role = "error"
+                message.content = message.status?.stack || JSON.stringify(message.status, null, 2)
+            }
             let sentences = this.logMessage(message)
             if (message.role == "assistant" && this.pipes.length)
                 sentences.forEach(sentence => {
