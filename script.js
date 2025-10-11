@@ -18,7 +18,7 @@ async function init() {
             let userTxt = $("#userInp").value.trim()
             let parts = userTxt.split(/\s+/)
             let file = completeFile(parts.pop())
-            $("#userInp").value = parts.join(" ") + " " + file + "\n"
+            $("#userInp").value = parts.join(" ") + " " + file + " "
         }
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
@@ -121,9 +121,8 @@ function userSubmit(e) {
             break;
 
         case "/open":
-            file = completeFile(parts[1] || "default_llm")
         case "/save":
-            file = file || canonFile(parts[1] || "default_llm")
+            file = canonFile(parts[1] || "default_llm")
             if (!file) {
                 chat.queue("No filename specified!")
                 break;
