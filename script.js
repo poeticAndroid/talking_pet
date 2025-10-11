@@ -97,7 +97,7 @@ function userSubmit(e) {
             chat.queue("/rm      - delete file")
             chat.queue("/open    - open file for editing")
             chat.queue("/load    - load config file")
-            chat.queue("/chat    - generate chat config file")
+            chat.queue("/log     - generate chat config file")
             chat.queue("/stop    - interrupt the conversation")
             chat.queue("/clear   - clear the chat")
             chat.queue("/unload  - unload all AI models")
@@ -151,7 +151,7 @@ function userSubmit(e) {
             loadConfig(file)
             break;
 
-        case "/chat":
+        case "/log":
             file = completeFile(parts[1] || "default_chat")
             content = { task: "chat" }
             content.messages = JSON.parse(JSON.stringify(chat.messages))
