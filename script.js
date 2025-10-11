@@ -18,7 +18,7 @@ async function init() {
             let userTxt = $("#userInp").value.trim()
             let parts = userTxt.split(/\s+/)
             let file = completeFile(parts.pop())
-            $("#userInp").value = parts.join(" ") + " " + file
+            $("#userInp").value = parts.join(" ") + " " + file + "\n"
         }
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
@@ -99,7 +99,7 @@ function userSubmit(e) {
             chat.queue("/load    - load config file")
             chat.queue("/log     - generate chat config file")
             chat.queue("/stop    - interrupt the conversation")
-            chat.queue("/clear   - clear the chat")
+            chat.queue("/reboot  - restart the app")
             chat.queue("/unload  - unload all AI models")
             chat.queue("/reload  - restart LLM model")
             chat.queue("/edit    - edit last message")
@@ -172,7 +172,7 @@ function userSubmit(e) {
             speaker.shutdown()
             break;
 
-        case "/clear":
+        case "/reboot":
             location.reload()
         case "/unload":
             llm.shutdown()
