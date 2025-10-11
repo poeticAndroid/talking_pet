@@ -1,7 +1,6 @@
 {
     "task": "text-generation",
     "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
-    "dtype": "fp16",
     "max_new_tokens": 128,
     "do_sample": true
 }
