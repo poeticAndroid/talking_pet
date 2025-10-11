@@ -1,0 +1,6 @@
+{
+    "task": "text-to-speech",
+    "model": "Xenova/speecht5_tts",
+    "quantized": false,
+    "speaker_embeddings": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin"
+}

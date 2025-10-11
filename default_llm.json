@@ -1,0 +1,8 @@
+{
+    "task": "text-generation",
+    "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "device": "webgpu",
+    "dtype": "fp16",
+    "max_new_tokens": 128,
+    "do_sample": true
+}

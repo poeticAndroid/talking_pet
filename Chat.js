@@ -15,6 +15,7 @@ export default class Chat extends Queue {
         if (typeof message == "string") {
             if (this.lastText) this.lastText.innerHTML += '<br/>' + this.escape(message)
             else this.lastText = this.log(message)
+            setTimeout(() => { this.lastText = null }, 1024)
         } else {
             this.lastText = null
             if (message.success) {
@@ -32,6 +33,7 @@ export default class Chat extends Queue {
 
     pop() {
         let message = this.messages.pop()
+        if (!message) return;
         if (this.container) {
             let el
             do {

@@ -1,20 +1,16 @@
 import Queue from "./Queue.js"
 
 export default class AI extends Queue {
-    job = ""
-    model = ""
-    options = {}
+    config = {}
     worker = null
     initStage = 0
     resolve = null
     reject = null
 
-    constructor(job = this.job, model = this.model, options = this.options) {
+    constructor(config = {}) {
         super()
         this._onMessage = this._onMessage.bind(this)
-        this.job = job
-        this.model = model
-        this.options = options
+        this.config = config
     }
 
     init() {
@@ -32,7 +28,7 @@ export default class AI extends Queue {
         return new Promise((resolve, reject) => {
             this.resolve = resolve
             this.reject = reject
-            this.worker.postMessage({ cmd: "process", args: [task.input, this.options] })
+            this.worker.postMessage({ cmd: "process", args: [task.input, this.config] })
         })
     }
 
@@ -56,7 +52,7 @@ export default class AI extends Queue {
         }
         switch (this.initStage) {
             case 0:
-                this.worker.postMessage({ cmd: "init", args: [this.job, this.model, this.options] })
+                this.worker.postMessage({ cmd: "init", args: [this.config.task, this.config.model, this.config] })
                 this.initStage++
                 break;
 

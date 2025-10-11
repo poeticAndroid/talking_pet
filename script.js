@@ -12,7 +12,16 @@ let inputHeight = 64
 async function init() {
     // document.body.addEventListener("click", initAudio)
     $("form").addEventListener("submit", userSubmit)
-    $("#userInp").addEventListener("keypress", e => { if (e.key == "Enter" && !e.shiftKey) userSubmit(e) })
+    $("#userInp").addEventListener("keydown", e => {
+        if (e.key == "Tab") {
+            e.preventDefault()
+            let userTxt = $("#userInp").value.trim()
+            let parts = userTxt.split(/\s+/)
+            let file = completeFile(parts.pop())
+            $("#userInp").value = parts.join(" ") + " " + file
+        }
+        if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
+    })
     inputAutoHeight()
     $("#ttsEnabled").addEventListener("change", e => {
         if ($("#ttsEnabled").checked) chat.pipeTo(tts)
@@ -22,31 +31,28 @@ async function init() {
         speaker.shutdown()
     })
 
-        ; (llm = new AI("text-generation", "HuggingFaceTB/SmolLM2-1.7B-Instruct", {
-            device: "webgpu", dtype: "fp16",
-            max_new_tokens: 128, do_sample: true
-        }))
-            .pipeTo(chat = new Chat($("#log")))
-        ; (tts = new AI("text-to-speech", "Xenova/speecht5_tts", {
-            // device: "webgpu",
-            quantized: false,
-            speaker_embeddings: "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin"
-        }))
-            .pipeTo(speaker = new Speaker($("#log")))
-
-    setTimeout(() => {
-        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
-        else chat.removePipeTo(tts)
-    }, 1024)
+    llm = new AI()
+    llm.pipeTo(chat = new Chat($("#log")))
+    tts = new AI()
+    tts.pipeTo(speaker = new Speaker($("#log")))
 
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
     speaker.addEventListener("statuschange", updateStatus)
     setTimeout(updateStatus, 1024, llm)
 
-    chat.queue({ role: "system", content: "You are an adorable pet that can talk." })
-    chat.queue({ role: "user", content: "Hello there!" })
-    think()
+    if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
+    await urlfs.preload("default.json", "default_llm.json", "default_tts.json", "default_chat.json")
+    loadConfig("default_llm.json")
+    loadConfig("default_tts.json")
+    loadConfig("default_chat.json")
+
+    setTimeout(() => {
+        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
+        else chat.removePipeTo(tts)
+        // think()
+    }, 1024)
+
 }
 
 function updateStatus(q) {
@@ -82,15 +88,77 @@ function userSubmit(e) {
     let userTxt = $("#userInp").value.trim()
     let parts = userTxt.split(/\s+/)
     let message
+    let file, content
     switch (parts[0].toLowerCase()) {
         case "/help":
-            chat.queue("/help - show this message")
-            chat.queue("/stop - interrupt the conversation")
-            chat.queue("/clear - clear the chat")
-            chat.queue("/unload - unload all AI models")
-            chat.queue("/reload - restart LLM model")
-            chat.queue("/edit - edit last message")
+            chat.queue("/help    - show this message")
+            chat.queue("/cd      - change current working directory")
+            chat.queue("/ls      - list files")
+            chat.queue("/rm      - delete file")
+            chat.queue("/open    - open file for editing")
+            chat.queue("/load    - load config file")
+            chat.queue("/chat    - generate chat config file")
+            chat.queue("/stop    - interrupt the conversation")
+            chat.queue("/clear   - clear the chat")
+            chat.queue("/unload  - unload all AI models")
+            chat.queue("/reload  - restart LLM model")
+            chat.queue("/edit    - edit last message")
             chat.queue("/forever - keep the AI going forever")
+            break;
+
+        case "/cd":
+            urlfs.cd(completeFile(parts[1] || "."))
+            if (!parts[1]) urlfs.cd()
+            parts[1] = null
+        case "/ls":
+            file = completeFile(parts[1] || "./")
+            chat.queue(`Directory listing of ${urlfs.absUrl(file)}:`)
+            urlfs.ls(file).sort().forEach(entry => chat.queue(entry))
+            break;
+
+        case "/rm":
+            urlfs.delete(parts[1])
+            break;
+
+        case "/open":
+            file = completeFile(parts[1] || "default_llm")
+        case "/save":
+            file = file || canonFile(parts[1] || "default_llm")
+            if (!file) {
+                chat.queue("No filename specified!")
+                break;
+            }
+            content = userTxt.replace(parts[0], "").replace(parts[1], "").trim()
+            if (content) {
+                try {
+                    content = JSON.stringify(JSON.parse(content), null, 2)
+                } catch (error) {
+                    setTimeout(e => {
+                        $("#userInp").value = `/save ${file}\n${urlfs.readText(file)}`
+                    })
+                }
+                urlfs.writeText(file, content)
+            } else {
+                setTimeout(e => {
+                    $("#userInp").value = `/save ${file}\n${urlfs.readText(file)}`
+                })
+            }
+            break;
+
+        case "/load":
+            file = completeFile(parts[1] || "default_llm")
+            if (!file) { chat.queue("No filename specified!"); break; }
+            loadConfig(file)
+            break;
+
+        case "/chat":
+            file = completeFile(parts[1] || "default_chat")
+            content = { task: "chat" }
+            content.messages = JSON.parse(JSON.stringify(chat.messages))
+            content.messages.forEach(message => delete message.id)
+            setTimeout(e => {
+                $("#userInp").value = `/save ${file}\n${JSON.stringify(content, null, 2)}`
+            })
             break;
 
         case "/stop":
@@ -149,7 +217,64 @@ function userSubmit(e) {
             else sendAs = "user"
             break;
     }
-    $("#userInp").value = ""
+    $("#userInp").value = userTxt.slice(0, 1) == "/" ? "/" : ""
+}
+
+function completeFile(filename = "default_llm") {
+    let dir, file = filename.toLowerCase()
+    if (!urlfs.readText(file)) {
+        dir = urlfs.dirname(file)
+        for (let f of urlfs.ls(dir).sort()) {
+            f = dir + f
+            if (f.slice(0, file.length) == file) file = f
+        }
+    }
+    return file
+}
+
+function canonFile(filename = ".", ext = ".json") {
+    filename = filename.toLowerCase()
+    if (filename.slice(-ext.length) != ext) filename += ext
+    return filename
+}
+
+function loadConfig(file = "default_llm") {
+    file = canonFile(file)
+    let config = {}
+    let content = urlfs.readJson("default.json")
+    for (let key in content) config[key] = content[key]
+    switch (urlfs.readJson(file).task) {
+        case "chat":
+            content = urlfs.readJson("default_chat.json")
+            break;
+        case "text-generation":
+            content = urlfs.readJson("default_llm.json")
+            break;
+
+        case "text-to-speech":
+            content = urlfs.readJson("default_tts.json")
+            break;
+    }
+    for (let key in content) config[key] = content[key]
+    content = urlfs.readJson(file)
+    for (let key in content) config[key] = content[key]
+    switch (config.task) {
+        case "chat":
+            while (chat.messages.length) chat.pop()
+            for (let message of config.messages) chat.queue(message)
+            break;
+        case "text-generation":
+            thinking = false
+            llm.shutdown()
+            llm.config = config
+            break;
+
+        case "text-to-speech":
+            chat.readAll()
+            tts.shutdown()
+            tts.config = config
+            break;
+    }
 }
 
 async function think() {
