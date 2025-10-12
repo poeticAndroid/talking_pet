@@ -9,22 +9,20 @@ let sendAs = "user"
 let thinking
 let inputHeight = 64
 
-let baseUrl = urlfs.cd()
-let llmFile = "default_llm.json"
-let ttsFile = "default_tts.json"
-let chatFile = "default_chat.json"
-let lastFile = llmFile
+let lastFile, llmFile, ttsFile, chatFile
+let baseUrl = canonFile(".", "/")
+
 
 async function init() {
-    // document.body.addEventListener("click", initAudio)
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
-        if (e.key == "Tab" && e.target.value) {
+        if (e.key == "Tab" && e.target.value.trim()) {
             e.preventDefault()
             let userTxt = $("#userInp").value.trim()
             let parts = userTxt.split(/\s+/)
             let file = completeFile(parts.pop())
-            $("#userInp").value = parts.join(" ") + " " + file + " "
+            console.log("parts", parts)
+            $("#userInp").value = parts.join(" ") + " " + file + (file.slice(-1) == "/" ? "" : " ")
         }
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
@@ -49,11 +47,12 @@ async function init() {
     speaker.addEventListener("statuschange", updateStatus)
     setTimeout(updateStatus, 1024, llm)
 
-    if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
-    await urlfs.preload("default.json", "default_llm.json", "default_tts.json", "default_chat.json")
-    loadConfig(llmFile)
-    loadConfig(ttsFile)
-    loadConfig(chatFile)
+    if (!urlfs.readText("_default.json")) $("#userInp").value = "/help"
+    await urlfs.preload("_default.json", "llm/_default.json", "tts/_default.json", "_default.json")
+    let j = urlfs.editJson("_default.json")
+    j.llm = canonFile(j.llm)
+    j.tts = canonFile(j.tts)
+    loadConfig("_default")
     lastFile = llmFile
 }
 
@@ -164,8 +163,8 @@ function userSubmit(e) {
             content.messages.forEach(message => delete message.id)
             while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
             while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
-            if (file != "default_chat.json") {
-                let def = urlfs.readJson("default_chat.json")
+            if (file != canonFile(baseUrl + "_default")) {
+                let def = urlfs.readJson(baseUrl + "_default.json")
                 for (let key of ["llm", "tts", "system", "intro"]) {
                     if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
                 }
@@ -237,56 +236,58 @@ function userSubmit(e) {
     $("#userInp").value = userTxt.slice(0, 1) == "/" ? "/" : ""
 }
 
-function completeFile(filename = "default_llm") {
-    let dir, file = filename.toLowerCase()
+function completeFile(filename = "_default") {
+    let dir, file = urlfs.absUrl(filename.toLowerCase(), "")
+    console.log("in", file)
     if (!urlfs.readText(file)) {
-        if (lastFile.slice(0, file.length) == file) file = lastFile
-        if (chatFile.slice(0, file.length) == file) file = chatFile
+        // if (lastFile.slice(0, file.length) == file) file = lastFile
+        // if (chatFile.slice(0, file.length) == file) file = chatFile
         dir = urlfs.dirname(file)
         for (let f of urlfs.ls(dir).sort()) {
             f = dir + f
             if (f.slice(0, file.length) == file) file = f
         }
     }
-    return file
+    console.log("out", file.replace(urlfs.pwd, ""))
+    return file.replace(urlfs.pwd, "")
 }
 
 function canonFile(filename = ".", ext = ".json") {
     filename = filename.toLowerCase()
     if (filename.slice(-ext.length) != ext) filename += ext
-    lastFile = filename
+    lastFile = urlfs.absUrl(filename).replace(urlfs.absUrl("/"), "/")
     if (urlfs.readJson(filename)) {
         switch (urlfs.readJson(filename).task) {
             case "chat":
-                chatFile = filename
+                chatFile = lastFile
                 break;
             case "text-generation":
-                llmFile = filename
+                llmFile = lastFile
                 break;
 
             case "text-to-speech":
-                ttsFile = filename
+                ttsFile = lastFile
                 break;
         }
     }
-    return filename
+    return lastFile
 }
 
-function loadConfig(file = "default_llm") {
+function loadConfig(file = baseUrl + "llm/_default") {
     file = canonFile(file)
     let config = {}
-    let content = urlfs.readJson("default.json")
-    for (let key in content) config[key] = content[key]
+    let content = {}
     switch (urlfs.readJson(file).task) {
         case "chat":
-            content = urlfs.readJson("default_chat.json")
+            content = urlfs.readJson(baseUrl + "_default.json") || { task: "chat" }
             break;
+
         case "text-generation":
-            content = urlfs.readJson("default_llm.json")
+            content = urlfs.readJson(baseUrl + "llm/_default.json") || { task: "text-generation" }
             break;
 
         case "text-to-speech":
-            content = urlfs.readJson("default_tts.json")
+            content = urlfs.readJson(baseUrl + "tts/_default.json") || { task: "text-to-speech" }
             break;
     }
     for (let key in content) config[key] = content[key]
@@ -301,6 +302,7 @@ function loadConfig(file = "default_llm") {
             if (config.intro) for (let message of config.intro) chat.queue(message)
             if (config.messages) for (let message of config.messages) chat.queue(message)
             break;
+
         case "text-generation":
             thinking = false
             llm.shutdown()
