@@ -48,12 +48,11 @@ async function init() {
     setTimeout(updateStatus, 1024, llm)
 
     if (!urlfs.readText("_default.json")) $("#userInp").value = "/help"
-    await urlfs.preload("_default.json", "llm/_default.json", "tts/_default.json", "_default.json")
+    await urlfs.preload("_default.json", "llm/_default.json", "tts/_default.json")
     let j = urlfs.editJson("_default.json")
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)
     loadConfig("_default")
-    lastFile = llmFile
 }
 
 function updateStatus(q) {
@@ -133,18 +132,11 @@ function userSubmit(e) {
             }
             content = userTxt.replace(parts[0], "").replace(parts[1], "").trim()
             if (content) {
-                try {
-                    content = JSON.stringify(JSON.parse(content), null, 2)
-                } catch (error) {
-                    setTimeout(e => {
-                        $("#userInp").value = `/save ${file}\n${urlfs.readText(file)}`
-                    })
-                }
                 urlfs.writeText(file, content)
                 chat.queue(`${file} saved!`)
             } else {
                 setTimeout(e => {
-                    $("#userInp").value = `/save ${file}\n${urlfs.readText(file)}`
+                    $("#userInp").value = `/save ${file}\n${JSON.stringify(urlfs.readJson(file), null, 2)}`
                 })
             }
             break;
@@ -238,17 +230,15 @@ function userSubmit(e) {
 
 function completeFile(filename = "_default") {
     let dir, file = urlfs.absUrl(filename.toLowerCase(), "")
-    console.log("in", file)
     if (!urlfs.readText(file)) {
-        // if (lastFile.slice(0, file.length) == file) file = lastFile
-        // if (chatFile.slice(0, file.length) == file) file = chatFile
+        if (lastFile.slice(0, file.length) == file) file = lastFile
+        if (chatFile.slice(0, file.length) == file) file = chatFile
         dir = urlfs.dirname(file)
         for (let f of urlfs.ls(dir).sort()) {
             f = dir + f
             if (f.slice(0, file.length) == file) file = f
         }
     }
-    console.log("out", file.replace(urlfs.pwd, ""))
     return file.replace(urlfs.pwd, "")
 }
 
