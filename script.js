@@ -49,6 +49,8 @@ async function init() {
 
     if (!urlfs.readText("_default.json")) $("#userInp").value = "/help"
     await urlfs.preload("_default.json", "llm/_default.json", "tts/_default.json")
+    await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
+    await urlfs.preload("tts/speecht5_tts.json", "tts/mms-tts-eng.json")
     let j = urlfs.editJson("_default.json")
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)

@@ -1,0 +1,4 @@
+{
+    "task": "text-generation",
+    "model": "HuggingFaceTB/SmolLM2-360M-Instruct"
+}

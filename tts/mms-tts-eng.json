@@ -1,0 +1,4 @@
+{
+    "task": "text-to-speech",
+    "model": "Xenova/mms-tts-eng"
+}

@@ -1,7 +1,7 @@
 {
     "task": "chat",
-    "llm": "llm/_default.json",
-    "tts": "tts/_default.json",
+    "llm": "llm/smollm2-135m-instruct.json",
+    "tts": "tts/speecht5_tts.json",
     "system": [
         {
             "role": "system",

@@ -1,0 +1,6 @@
+{
+    "task": "text-generation",
+    "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "dtype": "fp16",
+    "device": "webgpu"
+}

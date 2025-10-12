@@ -1,6 +1,4 @@
 {
-    "task": "text-generation",
-    "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
     "max_new_tokens": 128,
     "do_sample": true
 }
