@@ -162,7 +162,7 @@ export default class Chat extends Queue {
             el.innerHTML = `<strong>${src}:</strong> ` + el.innerHTML
         }
         this.container.appendChild(el)
-        el.scrollIntoView(true)
+        setTimeout(() => { el.scrollIntoView(true) })
         return el
     }
 

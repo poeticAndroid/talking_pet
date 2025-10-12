@@ -9,6 +9,7 @@ let sendAs = "user"
 let thinking
 let inputHeight = 64
 
+let baseUrl = urlfs.cd()
 let llmFile = "default_llm.json"
 let ttsFile = "default_tts.json"
 let chatFile = "default_chat.json"
@@ -118,8 +119,10 @@ function userSubmit(e) {
             break;
 
         case "/rm":
-            urlfs.delete(parts[1])
-            chat.queue(`${parts[1]} deleted!`)
+            file = parts[1]
+            if (!file) { chat.queue("No filename specified!"); break; }
+            urlfs.delete(file)
+            chat.queue(`${file} deleted!`)
             break;
 
         case "/open":
@@ -155,10 +158,18 @@ function userSubmit(e) {
             break;
 
         case "/log":
-            file = completeFile(parts[1] || chatFile)
-            content = { task: "chat" }
+            file = canonFile(parts[1] || chatFile)
+            content = { task: "chat", llm: llmFile, tts: ttsFile, system: [], intro: [] }
             content.messages = JSON.parse(JSON.stringify(chat.messages))
             content.messages.forEach(message => delete message.id)
+            while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
+            while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
+            if (file != "default_chat.json") {
+                let def = urlfs.readJson("default_chat.json")
+                for (let key of ["llm", "tts", "system", "intro"]) {
+                    if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
+                }
+            }
             setTimeout(e => {
                 $("#userInp").value = `/save ${file}\n${JSON.stringify(content, null, 2)}`
             })
@@ -284,7 +295,11 @@ function loadConfig(file = "default_llm") {
     switch (config.task) {
         case "chat":
             while (chat.messages.length) chat.pop()
-            for (let message of config.messages) chat.queue(message)
+            if (config.llm) loadConfig(config.llm)
+            if (config.tts) loadConfig(config.tts)
+            if (config.system) for (let message of config.system) chat.queue(message)
+            if (config.intro) for (let message of config.intro) chat.queue(message)
+            if (config.messages) for (let message of config.messages) chat.queue(message)
             break;
         case "text-generation":
             thinking = false
@@ -298,6 +313,7 @@ function loadConfig(file = "default_llm") {
             tts.config = config
             break;
     }
+    lastFile = file
 }
 
 async function think() {
