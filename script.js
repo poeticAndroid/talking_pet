@@ -58,6 +58,7 @@ async function init() {
     loadConfig("default")
 }
 
+let _humming
 function updateStatus(q) {
     let el
     if (q == llm) el = $("#llmStatus")
@@ -99,7 +100,25 @@ function updateStatus(q) {
             tts.shutdown()
         }, 1024 * 256)
     }
+
+    if (!$("#ttsEnabled").checked) return _humming = llm.isProcessing
+    if (llm.isProcessing) {
+        if (_humming) return;
+        _humming = true
+        if (!(tts.isProcessing || speaker.isProcessing)) {
+            if (speaker.hmmm) speaker.queue(speaker.hmmm)
+            else tts.queue({ input: "hmmm..." })
+        }
+    } else {
+        if (!_humming) return;
+        _humming = false
+        if (!(speaker.isProcessing)) {
+            if (speaker.ah) speaker.queue(speaker.ah)
+            else tts.queue({ input: "ah!" })
+        }
+    }
 }
+
 
 
 function userSubmit(e) {
