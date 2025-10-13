@@ -71,3 +71,12 @@ html {
 .status .busy {
     background: #0f0;
 }
+
+#throbber {
+    opacity: 0;
+    transition-duration: 1s;
+}
+
+#throbber.active {
+    opacity: 1;
+}

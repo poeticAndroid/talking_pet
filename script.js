@@ -83,6 +83,14 @@ function updateStatus(q) {
 
     if ($("#userInp").value == "/forever" && !(thinking || tts.isProcessing))
         setTimeout(() => { think() }, 1024)
+
+    if (llm.isProcessing || tts.isProcessing) {
+        $("#throbber").play()
+        $("#throbber").classList.add("active")
+    } else {
+        $("#throbber").pause()
+        $("#throbber").classList.remove("active")
+    }
 }
 
 function userSubmit(e) {
