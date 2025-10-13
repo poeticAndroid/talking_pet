@@ -87,10 +87,11 @@ function updateStatus(q) {
 
     clearTimeout(autoUnload)
     if (llm.isProcessing || tts.isProcessing) {
+        $("#throbber").loop = true
         $("#throbber").play()
         $("#throbber").classList.add("active")
     } else {
-        $("#throbber").pause()
+        $("#throbber").loop = false
         $("#throbber").classList.remove("active")
 
         autoUnload = setTimeout(() => {
