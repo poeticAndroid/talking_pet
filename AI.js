@@ -34,6 +34,7 @@ export default class AI extends Queue {
     }
 
     shutdown() {
+        if (this.reject) this.reject(new Error("Model shutting down!"))
         if (!this.worker) return;
         this.resolve = null
         this.reject = null
@@ -60,7 +61,7 @@ export default class AI extends Queue {
             default:
                 for (let key in this.currentTask) product[key] = this.currentTask[key]
                 if (this.resolve) this.resolve(product)
-                else throw "no resolver!"
+                else throw new Error("no resolver!")
                 this.resolve = null
                 this.reject = null
         }
