@@ -114,8 +114,8 @@ function updateStatus(q) {
         if (!(speaker.isProcessing)) {
             if (speaker.ah) speaker.queue(speaker.ah)
             else {
-                tts.queue({ input: "hmmm..." })
-                tts.queue({ input: "ah!" })
+                tts.inbox.unshift({ input: "ah!" })
+                tts.inbox.unshift({ input: "hmmm..." })
             }
         }
     }
