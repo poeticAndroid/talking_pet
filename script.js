@@ -107,14 +107,16 @@ function updateStatus(q) {
         _humming = true
         if (!(tts.isProcessing || speaker.isProcessing)) {
             if (speaker.hmmm) speaker.queue(speaker.hmmm)
-            else tts.queue({ input: "hmmm..." })
         }
     } else {
         if (!_humming) return;
         _humming = false
         if (!(speaker.isProcessing)) {
             if (speaker.ah) speaker.queue(speaker.ah)
-            else tts.queue({ input: "ah!" })
+            else {
+                tts.queue({ input: "hmmm..." })
+                tts.queue({ input: "ah!" })
+            }
         }
     }
 }
