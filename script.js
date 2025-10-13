@@ -313,6 +313,13 @@ function loadConfig(file = baseUrl + "llm/default") {
             if (config.system) for (let message of config.system) chat.queue(message)
             if (config.intro) for (let message of config.intro) chat.queue(message)
             if (config.messages) for (let message of config.messages) chat.queue(message)
+            setTimeout(() => {
+                let lastSentence = tts.inbox.pop()
+                tts.clear()
+                speaker.clear()
+                chat.readAll()
+                if (lastSentence) tts.queue(lastSentence)
+            }, 32)
             break;
 
         case "text-generation":
