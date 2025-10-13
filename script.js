@@ -81,7 +81,7 @@ function updateStatus(q) {
         currentSentence?.classList.add("rendering")
     }
 
-    if ($("#userInp").value == "/forever" && !(thinking || tts.isProcessing))
+    if ($("#userInp").value == "/forever" && !(llm.isProcessing || tts.isProcessing))
         setTimeout(() => { think() }, 1024)
 
     if (llm.isProcessing || tts.isProcessing) {
@@ -321,11 +321,12 @@ function loadConfig(file = baseUrl + "llm/default") {
 async function think() {
     if (thinking || llm.isProcessing) return
     thinking = true
-    await llm.queue({ input: chat.messages })
-    thinking = llm.isProcessing
+    llm.queue({ input: chat.messages })
+    setTimeout(() => { thinking = false }, 1024)
 }
 
 let _inputLength = 1024
+let _inputHeightSpeed = 0
 function inputAutoHeight() {
     requestAnimationFrame(inputAutoHeight)
     let el = $("#userInp")
@@ -334,8 +335,9 @@ function inputAutoHeight() {
     if (offset) {
         inputHeight += offset
         _inputLength = el.value.length
+        _inputHeightSpeed = 0
     } else if (_inputLength > el.value.length) {
-        inputHeight--
+        inputHeight -= _inputHeightSpeed++
     }
     el.style.height = inputHeight + "px"
     scrollBy(0, offset)
