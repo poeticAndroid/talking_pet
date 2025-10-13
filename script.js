@@ -153,6 +153,9 @@ function userSubmit(e) {
             if (content) {
                 urlfs.writeText(file, content)
                 chat.queue(`${file} saved!`)
+                setTimeout(e => {
+                    $("#userInp").value = `/load ${file}`
+                })
             } else {
                 setTimeout(e => {
                     $("#userInp").value = `/save ${file}\n${JSON.stringify(urlfs.readJson(file), null, 2)}`
@@ -232,8 +235,8 @@ function userSubmit(e) {
                 chat.queue(`Sorry. I don't know how to ${userTxt}.`)
                 break;
             }
-            if (thinking || llm.isProcessing) return
-            if (userTxt.trim()) {
+            if (userTxt) {
+                if (thinking || llm.isProcessing) return
                 message = {
                     role: sendAs,
                     content: userTxt
