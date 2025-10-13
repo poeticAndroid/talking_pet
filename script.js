@@ -47,14 +47,14 @@ async function init() {
     speaker.addEventListener("statuschange", updateStatus)
     setTimeout(updateStatus, 1024, llm)
 
-    if (!urlfs.readText("_default.json")) $("#userInp").value = "/help"
-    await urlfs.preload("_default.json", "llm/_default.json", "tts/_default.json")
+    if (!urlfs.readText(".default.json")) $("#userInp").value = "/help"
+    await urlfs.preload(".default.json", "llm/.default.json", "tts/.default.json")
     await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
     await urlfs.preload("tts/speecht5_tts.json", "tts/mms-tts-eng.json")
-    let j = urlfs.editJson("_default.json")
+    let j = urlfs.editJson(".default.json")
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)
-    loadConfig("_default")
+    loadConfig(".default")
 }
 
 function updateStatus(q) {
@@ -157,8 +157,8 @@ function userSubmit(e) {
             content.messages.forEach(message => delete message.id)
             while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
             while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
-            if (file != canonFile(baseUrl + "_default")) {
-                let def = urlfs.readJson(baseUrl + "_default.json")
+            if (file != canonFile(baseUrl + ".default")) {
+                let def = urlfs.readJson(baseUrl + ".default.json")
                 for (let key of ["llm", "tts", "system", "intro"]) {
                     if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
                 }
@@ -230,7 +230,7 @@ function userSubmit(e) {
     $("#userInp").value = userTxt.slice(0, 1) == "/" ? "/" : ""
 }
 
-function completeFile(filename = "_default") {
+function completeFile(filename = ".default") {
     let dir, file = urlfs.absUrl(filename.toLowerCase(), "")
     if (!urlfs.readText(file)) {
         if (lastFile.slice(0, file.length) == file) file = lastFile
@@ -265,21 +265,21 @@ function canonFile(filename = ".", ext = ".json") {
     return lastFile
 }
 
-function loadConfig(file = baseUrl + "llm/_default") {
+function loadConfig(file = baseUrl + "llm/.default") {
     file = canonFile(file)
     let config = {}
     let content = {}
     switch (urlfs.readJson(file).task) {
         case "chat":
-            content = urlfs.readJson(baseUrl + "_default.json") || { task: "chat" }
+            content = urlfs.readJson(baseUrl + ".default.json") || { task: "chat" }
             break;
 
         case "text-generation":
-            content = urlfs.readJson(baseUrl + "llm/_default.json") || { task: "text-generation" }
+            content = urlfs.readJson(baseUrl + "llm/.default.json") || { task: "text-generation" }
             break;
 
         case "text-to-speech":
-            content = urlfs.readJson(baseUrl + "tts/_default.json") || { task: "text-to-speech" }
+            content = urlfs.readJson(baseUrl + "tts/.default.json") || { task: "text-to-speech" }
             break;
     }
     for (let key in content) config[key] = content[key]
