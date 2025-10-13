@@ -8,6 +8,7 @@ let currentSentence
 let sendAs = "user"
 let thinking
 let inputHeight = 64
+let autoUnload
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
@@ -84,14 +85,21 @@ function updateStatus(q) {
     if ($("#userInp").value == "/forever" && !(llm.isProcessing || tts.isProcessing))
         setTimeout(() => { think() }, 1024)
 
+    clearTimeout(autoUnload)
     if (llm.isProcessing || tts.isProcessing) {
         $("#throbber").play()
         $("#throbber").classList.add("active")
     } else {
         $("#throbber").pause()
         $("#throbber").classList.remove("active")
+
+        autoUnload = setTimeout(() => {
+            llm.shutdown()
+            tts.shutdown()
+        }, 1024 * 256)
     }
 }
+
 
 function userSubmit(e) {
     e?.preventDefault()
@@ -112,7 +120,7 @@ function userSubmit(e) {
             chat.queue("/reboot  - restart the app")
             chat.queue("/unload  - unload all AI models")
             chat.queue("/reload  - restart LLM model")
-            chat.queue("/edit    - edit last message")
+            chat.queue("/edit    - remove and edit last message")
             chat.queue("/forever - keep the AI going forever")
             break;
 
