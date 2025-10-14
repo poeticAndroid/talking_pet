@@ -25,7 +25,7 @@ async function init() {
             let file = completeFile(parts.pop())
             $("#userInp").value = parts.join(" ") + " " + file + (file.slice(-1) == "/" ? "" : " ")
         }
-        if ((e.key == "ArrowUp" || (e.key == "Backspace" && e.shiftKey)) && $("#userInp").selectionStart <= 0) $("#userInp").value = history.pop() || ""
+        if ((e.key == "ArrowUp" || (e.key == "Backspace" && e.shiftKey)) && $("#userInp").selectionStart <= 0) setTimeout(e => { $("#userInp").value = history.pop() || "" })
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
     inputAutoHeight()
