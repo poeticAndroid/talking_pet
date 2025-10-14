@@ -7,7 +7,7 @@ let llm, chat, tts, speaker
 let currentSentence
 let sendAs = "user"
 let thinking
-let inputHeight = 64
+let inputHeight = 64, history = []
 let woke, autoUnload
 
 let lastFile, llmFile, ttsFile, chatFile
@@ -24,6 +24,7 @@ async function init() {
             let file = completeFile(parts.pop())
             $("#userInp").value = parts.join(" ") + " " + file + (file.slice(-1) == "/" ? "" : " ")
         }
+        if (e.key == "ArrowUp" && $("#userInp").selectionStart <= 0) $("#userInp").value = history.pop() || ""
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
     inputAutoHeight()
@@ -276,6 +277,11 @@ function userSubmit(e) {
             if (sendAs == "user") think()
             else sendAs = "user"
             break;
+    }
+    if (userTxt) {
+        let i = history.indexOf(userTxt)
+        if (i >= 0) history.splice(i, 1)
+        history.push(userTxt)
     }
     $("#userInp").value = userTxt.slice(0, 1) == "/" ? "/" : ""
 }
