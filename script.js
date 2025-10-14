@@ -17,6 +17,7 @@ let baseUrl = canonFile(".", "/")
 async function init() {
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
+        console.log(e.key)
         if (e.key == "Tab" && e.target.value.trim().slice(0, 1) == "/") {
             e.preventDefault()
             let userTxt = $("#userInp").value.trim()
@@ -24,7 +25,7 @@ async function init() {
             let file = completeFile(parts.pop())
             $("#userInp").value = parts.join(" ") + " " + file + (file.slice(-1) == "/" ? "" : " ")
         }
-        if ((e.key == "ArrowUp" || e.key == "ArrowLeft") && $("#userInp").selectionStart <= 0) $("#userInp").value = history.pop() || ""
+        if ((e.key == "ArrowUp" || (e.key == "Backspace" && e.shiftKey)) && $("#userInp").selectionStart <= 0) $("#userInp").value = history.pop() || ""
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
     })
     inputAutoHeight()
