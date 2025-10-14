@@ -8,7 +8,7 @@ let currentSentence
 let sendAs = "user"
 let thinking
 let inputHeight = 64
-let autoUnload, ttsHelper, ttsHelperRate = 2
+let woke, autoUnload, ttsHelper, ttsHelperRate = 2
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
@@ -61,7 +61,7 @@ async function init() {
 }
 
 let _humming
-function updateStatus(q) {
+async function updateStatus(q) {
     let el
     if (q == llm) el = $("#llmStatus")
     if (q == tts) el = $("#ttsStatus")
@@ -90,12 +90,12 @@ function updateStatus(q) {
 
     clearTimeout(autoUnload)
     if (llm.isProcessing || tts.isProcessing) {
-        $("#throbber").loop = true
-        $("#throbber").play()
         $("#throbber").classList.add("active")
+        if (!woke) woke = navigator.wakeLock.request("screen")
     } else {
-        $("#throbber").loop = false
         $("#throbber").classList.remove("active")
+        try { (await woke)?.release() } catch (error) { }
+        woke = null
 
         autoUnload = setTimeout(() => {
             llm.shutdown()
