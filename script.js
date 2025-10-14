@@ -17,7 +17,6 @@ let baseUrl = canonFile(".", "/")
 async function init() {
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
-        console.log(e.key)
         if (e.key == "Tab" && e.target.value.trim().slice(0, 1) == "/") {
             e.preventDefault()
             let userTxt = $("#userInp").value.trim()
