@@ -8,7 +8,7 @@ let currentSentence
 let sendAs = "user"
 let thinking
 let inputHeight = 64
-let woke, autoUnload, ttsHelper, ttsHelperRate = 2
+let woke, autoUnload
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
@@ -102,16 +102,6 @@ async function updateStatus(q) {
             tts.shutdown()
         }, 1024 * 256)
     }
-
-    clearTimeout(ttsHelper)
-    ttsHelper = setTimeout(() => {
-        if (tts.isInitialized && tts.isProcessing && !speaker.isProcessing) {
-            tts.currentTask.options = tts.currentTask.options || JSON.parse(JSON.stringify(tts.config))
-            tts.currentTask.options.rate = ttsHelperRate /= 2
-            speaker.queue(tts.currentTask)
-            tts.skip?.()
-        }
-    }, 4096)
 
     if (!$("#ttsEnabled").checked) return _humming = llm.isProcessing
     if (llm.isProcessing) {
