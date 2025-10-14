@@ -34,7 +34,7 @@ export default class AI extends Queue {
     }
 
     shutdown() {
-        // if (this.reject) this.reject({ success: false, status: new Error("Model shutting down!") })
+        if (this.resolve) this.resolve()
         if (!this.worker) return;
         this.resolve = null
         this.reject = null

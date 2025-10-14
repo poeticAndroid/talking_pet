@@ -14,8 +14,10 @@ export default class Queue {
     }
 
     queue(task) {
-        this.inbox.push(task);
-        this.emitEvent("statuschange")
+        if (task) {
+            this.inbox.push(task)
+            this.emitEvent("statuschange")
+        }
         setTimeout(this.notify)
     }
 
