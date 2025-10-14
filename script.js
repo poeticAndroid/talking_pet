@@ -110,15 +110,18 @@ async function updateStatus(q) {
         _humming = true
         if (!(tts.isProcessing || speaker.isProcessing)) {
             if (speaker.hmmm) speaker.queue(speaker.hmmm)
-            else speaker.queue({ input: "hmmm..." })
-            if (!speaker.ah) tts.inbox.unshift({ input: "ah!" })
+            else {
+                speaker.ah = null
+                tts.inbox.unshift({ input: "ah!" })
+                tts.inbox.unshift({ input: "hmmm..." })
+            }
         }
     } else {
         if (!_humming) return;
         _humming = false
         if (!(speaker.isProcessing)) {
             if (speaker.ah) speaker.queue(speaker.ah)
-            else speaker.hmmm = tts.queue({ input: "hmmm..." })
+            else speaker.hmmm = null
         }
     }
 }
@@ -368,6 +371,7 @@ function loadConfig(file = baseUrl + "llm/default") {
             chat.readAll()
             tts.shutdown()
             tts.config = config
+            speaker.hmmm = null
             speaker.ah = null
             break;
     }
