@@ -1,4 +1,5 @@
 {
+    "library": "transformers",
     "max_new_tokens": 128,
     "do_sample": true
 }

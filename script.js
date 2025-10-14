@@ -17,12 +17,11 @@ let baseUrl = canonFile(".", "/")
 async function init() {
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
-        if (e.key == "Tab" && e.target.value.trim()) {
+        if (e.key == "Tab" && e.target.value.trim().slice(0, 1) == "/") {
             e.preventDefault()
             let userTxt = $("#userInp").value.trim()
             let parts = userTxt.split(/\s+/)
             let file = completeFile(parts.pop())
-            console.log("parts", parts)
             $("#userInp").value = parts.join(" ") + " " + file + (file.slice(-1) == "/" ? "" : " ")
         }
         if (e.key == "Enter" && !e.shiftKey) userSubmit(e)
@@ -51,7 +50,7 @@ async function init() {
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
     await urlfs.preload("default.json", "llm/default.json", "tts/default.json")
     await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
-    await urlfs.preload("tts/speecht5_tts.json", "tts/mms-tts-eng.json")
+    await urlfs.preload("tts/system.json", "tts/speecht5_tts.json", "tts/mms-tts-eng.json")
     let j = urlfs.editJson("default.json")
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)
@@ -107,19 +106,19 @@ function updateStatus(q) {
         _humming = true
         if (!(tts.isProcessing || speaker.isProcessing)) {
             if (speaker.hmmm) speaker.queue(speaker.hmmm)
+            else speaker.queue({ input: "hmmm..." })
+            if (!speaker.ah) tts.inbox.unshift({ input: "ah!" })
         }
     } else {
         if (!_humming) return;
         _humming = false
         if (!(speaker.isProcessing)) {
             if (speaker.ah) speaker.queue(speaker.ah)
-            else {
-                tts.inbox.unshift({ input: "ah!" })
-                tts.inbox.unshift({ input: "hmmm..." })
-            }
+            else speaker.hmmm = tts.queue({ input: "hmmm..." })
         }
     }
 }
+
 
 
 
@@ -353,6 +352,7 @@ function loadConfig(file = baseUrl + "llm/default") {
             chat.readAll()
             tts.shutdown()
             tts.config = config
+            speaker.ah = null
             break;
     }
     lastFile = file

@@ -94,6 +94,7 @@ export default class Chat extends Queue {
     }
 
     splitSentences(txt) {
+        if (!txt) return []
         let sentences = [""]
         let quot,
             wrap,

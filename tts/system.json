@@ -1,0 +1,8 @@
+{
+    "task": "text-to-speech",
+    "library": "none",
+    "lang": "en-US",
+    "pitch": 1.0,
+    "rate": 1.0,
+    "voice": "zira"
+}

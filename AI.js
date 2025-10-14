@@ -19,7 +19,7 @@ export default class AI extends Queue {
             this.resolve = resolve
             this.reject = reject
             this.initStage = 0
-            this.worker = new Worker('worker.js', { type: "module" })
+            this.worker = new Worker((this.config.library || "none") + ".js", { type: "module" })
             this.worker.addEventListener("message", this._onMessage)
         })
     }
@@ -34,7 +34,7 @@ export default class AI extends Queue {
     }
 
     shutdown() {
-        if (this.reject) this.reject(new Error("Model shutting down!"))
+        if (this.reject) this.reject({ success: false, status: new Error("Model shutting down!") })
         if (!this.worker) return;
         this.resolve = null
         this.reject = null
