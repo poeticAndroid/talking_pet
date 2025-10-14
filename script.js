@@ -195,8 +195,9 @@ function userSubmit(e) {
             break;
 
         case "/voices":
+            file = parts[1]?.toLocaleLowerCase() || ""
             chat.queue("System voices:")
-            speechSynthesis.getVoices().forEach(v => chat.queue(v.name))
+            speechSynthesis.getVoices().forEach(v => v.name.toLocaleLowerCase().includes(file) && chat.queue(v.name))
             break;
 
         case "/log":
