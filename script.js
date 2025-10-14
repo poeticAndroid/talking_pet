@@ -149,6 +149,7 @@ function userSubmit(e) {
             chat.queue("/rm      - delete file")
             chat.queue("/open    - open file for editing")
             chat.queue("/load    - load chat or config file")
+            chat.queue("/voices  - list local system voices")
             chat.queue("/log     - generate chat file")
             chat.queue("/stop    - interrupt the conversation")
             chat.queue("/reboot  - restart the app")
@@ -201,6 +202,11 @@ function userSubmit(e) {
             if (!file) { chat.queue("No filename specified!"); break; }
             loadConfig(file)
             chat.queue(`${file} loaded!`)
+            break;
+
+        case "/voices":
+            chat.queue("System voices:")
+            speechSynthesis.getVoices().forEach(v => chat.queue(v.name))
             break;
 
         case "/log":
