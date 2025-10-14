@@ -46,7 +46,7 @@ export default class Speaker extends Queue {
                 this.audioSource.rate = speech.options?.rate || 1
                 if (typeof speech.option?.voice == "string") speech.option.preferedVoices = [speech.option.voice]
                 if (speech.options?.preferedVoices) {
-                    let prefs = [...speech.option.preferedVoices]
+                    let prefs = [...speech.options.preferedVoices]
                     let pref
                     while (pref = prefs.pop()) for (let voice of speechSynthesis.getVoices()) {
                         if (voice.name.toLocaleLowerCase().includes(pref.toLocaleLowerCase())) this.audioSource.voice = voice
