@@ -4,5 +4,7 @@
     "lang": "en-US",
     "pitch": 1.0,
     "rate": 1.0,
-    "voice": "zira"
+    "preferedVoices": [
+        "Zira"
+    ]
 }

@@ -8,7 +8,7 @@ let currentSentence
 let sendAs = "user"
 let thinking
 let inputHeight = 64
-let autoUnload
+let autoUnload, ttsHelper, ttsHelperRate = 2
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
@@ -48,9 +48,12 @@ async function init() {
     setTimeout(updateStatus, 1024, llm)
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
+    if (!urlfs.readJson("tts/system.json")?.preferedVoices) urlfs.delete("tts/system.json")
     await urlfs.preload("default.json", "llm/default.json", "tts/default.json")
     await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
     await urlfs.preload("tts/system.json", "tts/speecht5_tts.json", "tts/mms-tts-eng.json")
+    urlfs.editJson("llm/default.json").library = urlfs.readJson("llm/default.json").library || "transformers"
+    urlfs.editJson("tts/default.json").library = urlfs.readJson("tts/default.json").library || "transformers"
     let j = urlfs.editJson("default.json")
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)
@@ -99,6 +102,16 @@ function updateStatus(q) {
             tts.shutdown()
         }, 1024 * 256)
     }
+
+    clearTimeout(ttsHelper)
+    ttsHelper = setTimeout(() => {
+        if (tts.isInitialized && tts.isProcessing && !speaker.isProcessing) {
+            tts.currentTask.options = tts.currentTask.options || JSON.parse(JSON.stringify(tts.config))
+            tts.currentTask.options.rate = ttsHelperRate /= 2
+            speaker.queue(tts.currentTask)
+            tts.skip?.()
+        }
+    }, 4096)
 
     if (!$("#ttsEnabled").checked) return _humming = llm.isProcessing
     if (llm.isProcessing) {

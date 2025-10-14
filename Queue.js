@@ -48,7 +48,7 @@ export default class Queue {
     async notify() {
         if (this.isProcessing) return false;
         if (this.inbox.length == 0) return false;
-        if (!this.isInitialized) await this.restart()
+        if (!this.isInitialized) return this.restart()
         this.isProcessing = true
         let product
         try {
@@ -63,7 +63,6 @@ export default class Queue {
             this.emitEvent("statuschange")
             this.deliverErr(error)
         }
-        return product
     }
 
     async init() {
@@ -75,6 +74,12 @@ export default class Queue {
     async process(task) {
         return task
         throw "process method not implemented!"
+    }
+
+    async skip() {
+        let q = [...this.inbox]
+        await this.shutdown()
+        q.forEach(t => this.queue(t))
     }
 
     async shutdown() {

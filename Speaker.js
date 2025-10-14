@@ -44,9 +44,12 @@ export default class Speaker extends Queue {
                 this.audioSource.lang = speech.options?.lang || "en-US"
                 this.audioSource.pitch = speech.options?.pitch || 1
                 this.audioSource.rate = speech.options?.rate || 1
-                if (speech.options?.voice) {
-                    for (let voice of speechSynthesis.getVoices()) {
-                        if (voice.name.toLocaleLowerCase().includes(speech.options.voice.toLocaleLowerCase())) this.audioSource.voice = voice
+                if (typeof speech.option?.voice == "string") speech.option.preferedVoices = [speech.option.voice]
+                if (speech.options?.preferedVoices) {
+                    let prefs = [...speech.option.preferedVoices]
+                    let pref
+                    while (pref = prefs.pop()) for (let voice of speechSynthesis.getVoices()) {
+                        if (voice.name.toLocaleLowerCase().includes(pref.toLocaleLowerCase())) this.audioSource.voice = voice
                     }
                 }
                 speechSynthesis.speak(this.audioSource)
