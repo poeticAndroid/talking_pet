@@ -87,8 +87,8 @@ async function updateStatus(e) {
         currentSentence?.classList.add("rendering")
     }
 
-    if ($("#userInp").value == "/forever" && !(llm.isProcessing || tts.isProcessing))
-        setTimeout(() => { think() }, 1024)
+    if ($("#userInp").value.trim() == "/forever" && !(llm.isProcessing || tts.isProcessing))
+        setTimeout(() => { if (!(llm.isProcessing || tts.isProcessing)) think() }, 1024)
 
     if (llm.isProcessing || tts.isProcessing) {
         $("#throbber").classList.add("active")

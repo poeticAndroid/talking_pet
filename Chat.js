@@ -24,6 +24,7 @@ export default class Chat extends Queue {
                     let el = this.container.querySelector(`#message_${message.id}`) || this.log("", "assistant")
                     el.id = `message_${message.id}`
                     el.innerHTML += this.escape(message.token)
+                    el.scrollIntoView(true)
                     return;
                 }
                 let id = message.id
