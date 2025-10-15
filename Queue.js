@@ -1,29 +1,29 @@
-export default class Queue {
+export default class Queue extends EventTarget {
     inbox = []
     outbox = []
     pipes = []
     errPipes = []
-    listeners = []
 
     isInitialized = false
     isProcessing = false
     currentTask = null
 
     constructor() {
+        super()
         this.notify = this.notify.bind(this)
     }
 
     queue(task) {
         if (task) {
             this.inbox.push(task)
-            this.emitEvent("statuschange")
+            this.dispatchEvent(new Event("statuschange"))
         }
         setTimeout(this.notify)
     }
 
     clear() {
         this.inbox = []
-        this.emitEvent("statuschange")
+        this.dispatchEvent(new Event("statuschange"))
     }
 
     async restart() {
@@ -33,6 +33,7 @@ export default class Queue {
             await this.shutdown()
             this.isProcessing = true
         }
+        this.dispatchEvent(new Event("statuschange"))
         try {
             this.isInitialized = !!(await this.init())
         } catch (error) {
@@ -42,7 +43,7 @@ export default class Queue {
             this.deliverErr(error)
         }
         this.isProcessing = false
-        this.emitEvent("statuschange")
+        this.dispatchEvent(new Event("statuschange"))
         setTimeout(this.notify)
         return this.isInitialized
     }
@@ -55,21 +56,21 @@ export default class Queue {
         let product
         try {
             this.currentTask = this.inbox.shift()
-            this.emitEvent("statuschange")
+            this.dispatchEvent(new Event("statuschange"))
             product = await this.process(this.currentTask)
             this.deliver(product)
         } catch (error) {
             console.error("process err!", error)
             this.isInitialized = false
             this.shutdown()
-            this.emitEvent("statuschange")
+            this.dispatchEvent(new Event("statuschange"))
             this.deliverErr(error)
         }
     }
 
     async init() {
         this.isInitialized = true
-        this.emitEvent("statuschange")
+        this.dispatchEvent(new Event("statuschange"))
         return this.isInitialized
     }
 
@@ -88,7 +89,7 @@ export default class Queue {
         this.clear()
         this.isProcessing = false
         this.isInitialized = false
-        this.emitEvent("statuschange")
+        this.dispatchEvent(new Event("statuschange"))
         return this.isInitialized
     }
 
@@ -103,7 +104,7 @@ export default class Queue {
         }
         this.currentTask = null
         this.isProcessing = false
-        if (this.inbox.length == 0) this.emitEvent("statuschange")
+        if (this.inbox.length == 0) this.dispatchEvent(new Event("statuschange"))
         setTimeout(this.notify)
     }
 
@@ -115,7 +116,7 @@ export default class Queue {
         }
         this.currentTask = null
         this.isProcessing = false
-        this.emitEvent("statuschange")
+        this.dispatchEvent(new Event("statuschange"))
     }
 
     pipeTo(queue) {
@@ -134,22 +135,4 @@ export default class Queue {
         if (this.errPipes.indexOf(queue) >= 0) this.errPipes.splice(this.errPipes.indexOf(queue), 1)
     }
 
-    addEventListener(event, listener) {
-        if (event == "statuschange" && this.listeners.indexOf(listener) < 0) this.listeners.push(listener)
-        return listener
-    }
-    removeEventListener(event, listener) {
-        if (this.listeners.indexOf(listener) >= 0) this.listeners.splice(this.listeners.indexOf(listener), 1)
-    }
-    emitEvent(event) {
-        if (this._emitting) return;
-        this._emitting = setTimeout(() => {
-            this._emitting = false
-            for (let listener of this.listeners) {
-                listener(this)
-            }
-        }, 32)
-    }
-
-    _emitting
 }

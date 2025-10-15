@@ -61,7 +61,8 @@ async function init() {
     loadConfig("default")
 }
 
-async function updateStatus(q) {
+async function updateStatus(e) {
+    let q = e.target
     let el
     if (q == llm) el = $("#llmStatus")
     if (q == tts) el = $("#ttsStatus")
