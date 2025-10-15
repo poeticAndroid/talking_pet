@@ -20,6 +20,12 @@ export default class Chat extends Queue {
         } else {
             this.lastText = null
             if (message.success) {
+                if (message.token) {
+                    let el = this.container.querySelector(`#message_${message.id}`) || this.log("", "assistant")
+                    el.id = `message_${message.id}`
+                    el.innerHTML += this.escape(message.token)
+                    return;
+                }
                 let id = message.id
                 message = message[0].generated_text.pop()
                 message.id = id
@@ -103,7 +109,9 @@ export default class Chat extends Queue {
         let sentences = this.splitSentences(message.content).map(text => ({ id: _id++, input: text }))
         let html = ""
         for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${(message.role == "assistant" && this.pipes.length) ? "unread" : "read"}">${this.escape(sentence.input)}</span>`
-        let el = this.log(html, message.role, true)
+        let el = this.container.querySelector(`#message_${message.id}`)
+        el?.parentElement.removeChild(el)
+        el = this.log(html, message.role, true)
         el.id = `message_${message.id}`
         this.messages.push(message)
         return sentences

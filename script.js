@@ -253,6 +253,7 @@ function userSubmit(e) {
             if (userTxt) {
                 if (thinking || llm.isProcessing) return
                 message = {
+                    id: _id++,
                     role: sendAs,
                     content: userTxt
                 }
@@ -330,9 +331,9 @@ function loadConfig(file = baseUrl + "llm/default") {
             while (chat.messages.length) chat.pop()
             if (config.llm) loadConfig(config.llm)
             if (config.tts) loadConfig(config.tts)
-            if (config.system) for (let message of config.system) chat.queue(message)
-            if (config.intro) for (let message of config.intro) chat.queue(message)
-            if (config.messages) for (let message of config.messages) chat.queue(message)
+            if (config.system) for (let message of config.system) { message.id = _id++; chat.queue(message) }
+            if (config.intro) for (let message of config.intro) { message.id = _id++; chat.queue(message) }
+            if (config.messages) for (let message of config.messages) { message.id = _id++; chat.queue(message) }
             setTimeout(() => {
                 let lastSentence = tts.inbox.pop()
                 tts.clear()
@@ -362,7 +363,7 @@ function loadConfig(file = baseUrl + "llm/default") {
 async function think() {
     if (thinking || llm.isProcessing) return
     thinking = true
-    llm.queue({ input: chat.messages })
+    llm.queue({ input: chat.messages, id: _id++ })
     setTimeout(() => { thinking = false }, 1024)
 }
 

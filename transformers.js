@@ -1,14 +1,19 @@
 // worker.js (module)
-import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5";
+import { pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.5";
 
-let ai
+let ai, streamer
 
 self.addEventListener("message", async (e) => {
     // console.log("worker got:", e.data)
     switch (e.data.cmd) {
         case "init":
             try {
-                ai = await pipeline(...e.data.args)
+                let options = e.data.args.pop()
+                ai = await pipeline(...e.data.args, options)
+                if (options.streamer) streamer = new TextStreamer(ai.tokenizer, {
+                    skip_prompt: true,
+                    callback_function: postToken
+                })
                 self.postMessage({ success: true, id: e.data.id })
             } catch (error) {
                 self.postMessage({ success: false, status: error, id: e.data.id })
@@ -17,8 +22,11 @@ self.addEventListener("message", async (e) => {
 
         case "process":
             try {
-                let res = await ai(...e.data.args)
+                let options = e.data.args.pop()
+                if (options.streamer) options.streamer = streamer
+                let res = await ai(...e.data.args, options)
                 res.success = true
+                res.status = "finished"
                 res.id = e.data.id
                 self.postMessage(res)
             } catch (error) {
@@ -31,5 +39,9 @@ self.addEventListener("message", async (e) => {
             break;
     }
 });
+
+function postToken(token) {
+    self.postMessage({ success: true, status: "streaming", token: token })
+}
 
 self.postMessage({ success: true, status: "ready" })

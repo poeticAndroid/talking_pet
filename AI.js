@@ -69,6 +69,12 @@ export default class AI extends Queue {
 
             default:
                 for (let key in this.currentTask) product[key] = this.currentTask[key]
+                if (product.status == "streaming") {
+                    for (let pipe of this.pipes) {
+                        pipe.queue(product)
+                    }
+                    return;
+                }
                 if (typeof product.input == "string" && product.input.length < 8)
                     this.cache[product.input.trim().toLocaleLowerCase()] = product
                 if (this.resolve) this.resolve(product)
