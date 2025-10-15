@@ -90,7 +90,7 @@ async function updateStatus(q) {
 
     if (llm.isProcessing || tts.isProcessing) {
         $("#throbber").classList.add("active")
-        if (!woke) woke = navigator.wakeLock.request("screen")
+        if (woke?.released || !woke) woke = navigator.wakeLock.request("screen")
     } else {
         $("#throbber").classList.remove("active")
     }
@@ -103,7 +103,6 @@ async function updateStatus(q) {
         try { (await woke)?.release() } catch (error) { }
     }, 1024 * 64 * 4)
 
-    if (woke.released) woke = null
     woke = await woke
 }
 
