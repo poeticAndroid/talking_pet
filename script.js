@@ -317,6 +317,7 @@ function loadConfig(file = baseUrl + "llm/default") {
 
         case "text-generation":
             content = urlfs.readJson(baseUrl + "llm/default.json") || { task: "text-generation" }
+            content.streamer = true
             break;
 
         case "text-to-speech":
