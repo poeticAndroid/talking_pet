@@ -37,6 +37,7 @@ html {
 
 
 .unread {
+    transition-duration: 1s;
     opacity: .125;
 }
 
@@ -73,8 +74,8 @@ html {
 }
 
 #throbber {
-    opacity: 0;
     transition-duration: 1s;
+    opacity: 0;
 }
 
 #throbber.active {
