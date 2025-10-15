@@ -22,6 +22,7 @@ export default class Chat extends Queue {
             if (message.success) {
                 if (message.token) {
                     let el = this.container.querySelector(`#message_${message.id}`) || this.log("", "assistant")
+                    el.classList.add("unread")
                     el.id = `message_${message.id}`
                     el.innerHTML += this.escape(message.token)
                     el.scrollIntoView(true)
