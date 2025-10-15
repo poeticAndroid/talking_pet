@@ -61,7 +61,7 @@ async function init() {
     loadConfig("default")
 }
 
-function updateStatus(q) {
+async function updateStatus(q) {
     let el
     if (q == llm) el = $("#llmStatus")
     if (q == tts) el = $("#ttsStatus")
@@ -88,18 +88,23 @@ function updateStatus(q) {
     if ($("#userInp").value == "/forever" && !(llm.isProcessing || tts.isProcessing))
         setTimeout(() => { think() }, 1024)
 
-    if (llm.isProcessing || tts.isProcessing) $("#throbber").classList.add("active")
-    else $("#throbber").classList.remove("active")
+    if (llm.isProcessing || tts.isProcessing) {
+        $("#throbber").classList.add("active")
+        if (!woke) woke = navigator.wakeLock.request("screen")
+    } else {
+        $("#throbber").classList.remove("active")
+    }
 
     clearTimeout(autoUnload)
-    if (!woke) woke = navigator.wakeLock.request("screen")
     autoUnload = setTimeout(async () => {
         llm.shutdown()
         tts.shutdown()
         speaker.shutdown()
         try { (await woke)?.release() } catch (error) { }
-        woke = null
     }, 1024 * 64 * 4)
+
+    if (woke.released) woke = null
+    woke = await woke
 }
 
 
