@@ -53,6 +53,7 @@ async function init() {
     await urlfs.preload("default.json", "llm/default.json", "tts/default.json")
     await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
     await urlfs.preload("tts/system.json", "tts/speecht5_tts.json", "tts/mms-tts-eng.json")
+    urlfs.editJson("llm/default.json").streamer = urlfs.readJson("llm/default.json").streamer === undefined ? true : urlfs.readJson("llm/default.json").streamer
     urlfs.editJson("llm/default.json").library = urlfs.readJson("llm/default.json").library || "transformers"
     urlfs.editJson("tts/default.json").library = urlfs.readJson("tts/default.json").library || "transformers"
     let j = urlfs.editJson("default.json")
@@ -317,7 +318,6 @@ function loadConfig(file = baseUrl + "llm/default") {
 
         case "text-generation":
             content = urlfs.readJson(baseUrl + "llm/default.json") || { task: "text-generation" }
-            content.streamer = true
             break;
 
         case "text-to-speech":

@@ -1,5 +1,6 @@
 {
     "library": "transformers",
+    "streamer": true,
     "max_new_tokens": 128,
     "do_sample": true
 }
