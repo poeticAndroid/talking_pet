@@ -4,6 +4,7 @@ export default class Chat extends Queue {
     messages = []
     container = null
     lastText
+    lastRole
 
     constructor(container = this.container) {
         super()
@@ -27,6 +28,21 @@ export default class Chat extends Queue {
                 let el = this.log("ERR! " + (message.status?.stack || JSON.stringify(message.status, null, 2)))
                 el.classList.add("error")
             } else {
+                if (this.lastRole != message.role &&
+                    this.pipes[0]?.isInitialized &&
+                    !this.pipes[0]?.isProcessing &&
+                    !this.pipes[0]?.pipes[0]?.isProcessing) {
+                    switch (message.role) {
+                        case "user":
+                            this.outbox.push({ input: "hmmm..." })
+                            break;
+
+                        case "assistant":
+                            this.outbox.push({ input: "ah!" })
+                            break;
+                    }
+                    this.lastRole = message.role
+                }
                 let sentences = this.logMessage(message)
                 if (message.role == "assistant" && this.pipes.length)
                     sentences.forEach(sentence => {

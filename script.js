@@ -61,8 +61,7 @@ async function init() {
     loadConfig("default")
 }
 
-let _humming
-async function updateStatus(q) {
+function updateStatus(q) {
     let el
     if (q == llm) el = $("#llmStatus")
     if (q == tts) el = $("#ttsStatus")
@@ -89,41 +88,18 @@ async function updateStatus(q) {
     if ($("#userInp").value == "/forever" && !(llm.isProcessing || tts.isProcessing))
         setTimeout(() => { think() }, 1024)
 
+    if (llm.isProcessing || tts.isProcessing) $("#throbber").classList.add("active")
+    else $("#throbber").classList.remove("active")
+
     clearTimeout(autoUnload)
-    if (llm.isProcessing || tts.isProcessing) {
-        $("#throbber").classList.add("active")
-        if (!woke) woke = navigator.wakeLock.request("screen")
-    } else {
-        $("#throbber").classList.remove("active")
+    if (!woke) woke = navigator.wakeLock.request("screen")
+    autoUnload = setTimeout(async () => {
+        llm.shutdown()
+        tts.shutdown()
+        speaker.shutdown()
         try { (await woke)?.release() } catch (error) { }
         woke = null
-
-        autoUnload = setTimeout(() => {
-            llm.shutdown()
-            tts.shutdown()
-        }, 1024 * 256)
-    }
-
-    if (!$("#ttsEnabled").checked) return _humming = llm.isProcessing
-    if (llm.isProcessing) {
-        if (_humming) return;
-        _humming = true
-        if (!(tts.isProcessing || speaker.isProcessing)) {
-            if (speaker.hmmm) speaker.queue(speaker.hmmm)
-            else {
-                speaker.ah = null
-                tts.inbox.unshift({ input: "ah!" })
-                tts.inbox.unshift({ input: "hmmm..." })
-            }
-        }
-    } else {
-        if (!_humming) return;
-        _humming = false
-        if (!(speaker.isProcessing)) {
-            if (speaker.ah) speaker.queue(speaker.ah)
-            else speaker.hmmm = null
-        }
-    }
+    }, 1024 * 64 * 4)
 }
 
 

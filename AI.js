@@ -7,6 +7,8 @@ export default class AI extends Queue {
     resolve = null
     reject = null
 
+    cache = {}
+
     constructor(config = {}) {
         super()
         this._onMessage = this._onMessage.bind(this)
@@ -26,6 +28,12 @@ export default class AI extends Queue {
 
     process(task) {
         return new Promise((resolve, reject) => {
+            let fromCache
+            if (typeof task.input == "string" && (fromCache = this.cache[task.input.trim().toLocaleLowerCase()])) {
+                console.log("Reusing", task.input, "from", this.cache)
+                for (let key in task) fromCache[key] = task[key]
+                return resolve(fromCache)
+            }
             if (!this.worker) reject({ success: false, status: new Error("model not loaded!") })
             this.resolve = resolve
             this.reject = reject
@@ -36,6 +44,7 @@ export default class AI extends Queue {
     shutdown() {
         if (this.resolve) this.resolve()
         if (!this.worker) return;
+        this.cache = {}
         this.resolve = null
         this.reject = null
         this.initStage = 0
@@ -60,6 +69,8 @@ export default class AI extends Queue {
 
             default:
                 for (let key in this.currentTask) product[key] = this.currentTask[key]
+                if (typeof product.input == "string" && product.input.length < 8)
+                    this.cache[product.input.trim().toLocaleLowerCase()] = product
                 if (this.resolve) this.resolve(product)
                 else throw new Error("no resolver!")
                 this.resolve = null

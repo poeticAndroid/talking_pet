@@ -5,9 +5,6 @@ export default class Speaker extends Queue {
     audioCtx = new AudioContext()
     audioSource
 
-    hmmm
-    ah
-
     constructor(container, audioCtx) {
         super()
         this.container = container || this.container
@@ -23,8 +20,6 @@ export default class Speaker extends Queue {
     }
 
     process(speech) {
-        if (speech.input == "hmmm...") this.hmmm = this.hmmm || speech
-        if (speech.input == "ah!") this.ah = this.ah || speech
         return new Promise((resolve, reject) => {
             let eventName
             if (speech.audio) {
