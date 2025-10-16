@@ -160,6 +160,7 @@ export default class Chat extends Queue {
                 case "?":
                 case ":":
                 case ";":
+                case "~":
                     if (sentences[sentences.length - 1] == char)
                         sentences[sentences.length - 2] += sentences.pop()
                     sentences.push("")

@@ -408,6 +408,7 @@ function inputAutoHeight() {
         _inputHeightSpeed = 0
     } else if (_inputLength > el.value.length) {
         inputHeight -= _inputHeightSpeed++
+        if (inputHeight < 8) inputHeight = 8
     }
     el.style.height = inputHeight + "px"
     scrollBy(0, offset)
