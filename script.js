@@ -180,11 +180,17 @@ function userSubmit(e) {
             }
             content = userTxt.replace(parts[0], "").replace(parts[1], "").trim()
             if (content) {
-                urlfs.writeText(file, content)
-                chat.queue(`${file} saved!`)
-                setTimeout(e => {
-                    $("#userInp").value = `/load ${file}`
-                })
+                try {
+                    JSON.parse(content)
+                    urlfs.writeText(file, content)
+                    chat.queue(`${file} saved!`)
+                    setTimeout(e => {
+                        $("#userInp").value = `/load ${file}`
+                    })
+                } catch (error) {
+                    chat.queue(`Syntax error!`)
+                    return;
+                }
             } else {
                 setTimeout(e => {
                     $("#userInp").value = `/save ${file}\n${JSON.stringify(urlfs.readJson(file), null, 2)}`
@@ -309,17 +315,6 @@ function canonFile(filename = "default", ext = ".json") {
     filename = filename.toLowerCase()
     if (filename.slice(-ext.length) != ext) filename += ext
     lastFile = urlfs.absUrl(filename).replace(urlfs.absUrl("/"), "/")
-    if (urlfs.readJson(filename)) {
-        switch (urlfs.readJson(filename).task) {
-            case "chat":
-                break;
-            case "text-generation":
-                break;
-
-            case "text-to-speech":
-                break;
-        }
-    }
     return lastFile
 }
 
