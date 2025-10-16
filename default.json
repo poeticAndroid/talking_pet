@@ -1,5 +1,6 @@
 {
     "task": "chat",
+    "auto_log": true,
     "llm": "llm/smollm2-135m-instruct.json",
     "tts": "tts/system.json",
     "system": [

@@ -12,7 +12,7 @@ let woke, autoUnload
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
-
+let autoLog
 
 async function init() {
     $("form").addEventListener("submit", userSubmit)
@@ -96,6 +96,8 @@ async function updateStatus(e) {
         if (q.isProcessing) el.setAttribute("class", "init")
         else el.setAttribute("class", "")
     }
+
+    if (autoLog) urlfs.writeJson(chatFile, logChat(chatFile))
 
     if (currentSentence != $("#sentence_" + tts.currentTask?.id)) {
         currentSentence?.classList.remove("rendering")
@@ -213,17 +215,7 @@ function userSubmit(e) {
 
         case "/log":
             file = canonFile(parts[1] || chatFile)
-            content = { task: "chat", llm: llmFile, tts: ttsFile, system: [], intro: [] }
-            content.messages = JSON.parse(JSON.stringify(chat.messages))
-            content.messages.forEach(message => delete message.id)
-            while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
-            while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
-            if (file != canonFile(baseUrl + "default")) {
-                let def = urlfs.readJson(baseUrl + "default.json")
-                for (let key of ["llm", "tts", "system", "intro"]) {
-                    if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
-                }
-            }
+            content = logChat(file)
             setTimeout(e => {
                 $("#userInp").value = `/save ${file}\n${JSON.stringify(content, null, 2)}`
             })
@@ -324,6 +316,7 @@ function loadConfig(file = baseUrl + "llm/default") {
     let content = {}
     switch (urlfs.readJson(file).task) {
         case "chat":
+            autoLog = false
             chatFile = file
             content = urlfs.readJson(baseUrl + "default.json") || { task: "chat" }
             break;
@@ -350,6 +343,7 @@ function loadConfig(file = baseUrl + "llm/default") {
             if (config.intro) for (let message of config.intro) { message.id = _id++; chat.queue(message) }
             if (config.messages) for (let message of config.messages) { message.id = _id++; chat.queue(message) }
             setTimeout(() => {
+                autoLog = config.auto_log
                 let lastSentence = tts.inbox.pop()
                 tts.clear()
                 speaker.clear()
@@ -373,6 +367,22 @@ function loadConfig(file = baseUrl + "llm/default") {
             break;
     }
     lastFile = file
+}
+
+function logChat(file = chatFile) {
+    chatFile = file = canonFile(file)
+    let content = { task: "chat", auto_log: autoLog, llm: llmFile, tts: ttsFile, system: [], intro: [] }
+    content.messages = JSON.parse(JSON.stringify(chat.messages))
+    content.messages.forEach(message => delete message.id)
+    while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
+    while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
+    if (file != canonFile(baseUrl + "default")) {
+        let def = urlfs.readJson(baseUrl + "default.json")
+        for (let key of ["auto_log", "llm", "tts", "system", "intro"]) {
+            if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
+        }
+    }
+    return content
 }
 
 async function think() {
