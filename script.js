@@ -46,20 +46,39 @@ async function init() {
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
     speaker.addEventListener("statuschange", updateStatus)
-    setTimeout(updateStatus, 1024, llm)
+    chat.queue({ role: "system", content: "Loading..." })
+
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
-    if (!urlfs.readJson("tts/system.json")?.preferedVoices) urlfs.delete("tts/system.json")
-    await urlfs.preload("default.json", "llm/default.json", "tts/default.json")
-    await urlfs.preload("llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json", "llm/smollm2-1.7b-instruct.json")
-    await urlfs.preload("tts/system.json", "tts/speecht5_tts.json", "tts/mms-tts-eng.json")
-    urlfs.editJson("llm/default.json").streamer = urlfs.readJson("llm/default.json").streamer === undefined ? true : urlfs.readJson("llm/default.json").streamer
-    urlfs.editJson("llm/default.json").library = urlfs.readJson("llm/default.json").library || "transformers"
-    urlfs.editJson("tts/default.json").library = urlfs.readJson("tts/default.json").library || "transformers"
+    await updateDefaults()
+    loadConfig("default")
+}
+
+async function updateDefaults() {
+    const files = ["default.json", "llm/default.json", "tts/default.json",
+        "llm/smollm2-1.7b-instruct.json", "llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json",
+        "tts/mms-tts-eng.json", "tts/speecht5_tts.json", "tts/system.json"]
+    for (let file of files) {
+        urlfs.delete(file + "?new")
+        await urlfs.preload(file, file + "?new")
+        let user = urlfs.readJson(file)
+        let old = urlfs.readJson(file + "?default") || {}
+        let def = urlfs.readJson(file + "?new")
+        for (let key in def) {
+            if (JSON.stringify(user[key]) === JSON.stringify(old[key])) user[key] = def[key]
+        }
+        urlfs.writeJson(file, user)
+        urlfs.writeText(file + "?default", urlfs.readText(file + "?new"))
+        urlfs.delete(file + "?new")
+    }
     let j = urlfs.editJson("default.json")
+    if (j.llm?.includes("default")) j.llm = urlfs.readJson("default.json?default").llm
+    if (j.tts?.includes("default")) j.tts = urlfs.readJson("default.json?default").tts
     j.llm = canonFile(j.llm)
     j.tts = canonFile(j.tts)
-    loadConfig("default")
+    j = urlfs.editJson("default.json?default")
+    j.llm = canonFile(j.llm)
+    j.tts = canonFile(j.tts)
 }
 
 async function updateStatus(e) {
@@ -142,7 +161,7 @@ function userSubmit(e) {
         case "/ls":
             file = completeFile(parts[1] || "./")
             chat.queue(`Directory listing of ${urlfs.absUrl(file).replace(location.toString(), "~/")}:`)
-            urlfs.ls(file).sort().forEach(entry => chat.queue(entry))
+            urlfs.ls(file).sort().forEach(entry => !entry.includes("?") && chat.queue(entry))
             break;
 
         case "/rm":
@@ -283,24 +302,21 @@ function completeFile(filename = "default") {
             if (f.slice(0, file.length) == file) file = f
         }
     }
-    return file.replace(urlfs.pwd, "")
+    return file.replace(urlfs.pwd, "").split("?")[0]
 }
 
-function canonFile(filename = ".", ext = ".json") {
+function canonFile(filename = "default", ext = ".json") {
     filename = filename.toLowerCase()
     if (filename.slice(-ext.length) != ext) filename += ext
     lastFile = urlfs.absUrl(filename).replace(urlfs.absUrl("/"), "/")
     if (urlfs.readJson(filename)) {
         switch (urlfs.readJson(filename).task) {
             case "chat":
-                chatFile = lastFile
                 break;
             case "text-generation":
-                llmFile = lastFile
                 break;
 
             case "text-to-speech":
-                ttsFile = lastFile
                 break;
         }
     }
@@ -313,14 +329,17 @@ function loadConfig(file = baseUrl + "llm/default") {
     let content = {}
     switch (urlfs.readJson(file).task) {
         case "chat":
+            chatFile = file
             content = urlfs.readJson(baseUrl + "default.json") || { task: "chat" }
             break;
 
         case "text-generation":
+            llmFile = file
             content = urlfs.readJson(baseUrl + "llm/default.json") || { task: "text-generation" }
             break;
 
         case "text-to-speech":
+            ttsFile = file
             content = urlfs.readJson(baseUrl + "tts/default.json") || { task: "text-to-speech" }
             break;
     }
