@@ -64,6 +64,9 @@ async function updateDefaults() {
         let user = urlfs.readJson(file)
         let old = urlfs.readJson(file + "?default") || {}
         let def = urlfs.readJson(file + "?new")
+        for (let key in user) {
+            if (JSON.stringify(user[key]) === JSON.stringify(old[key])) user[key] = def[key]
+        }
         for (let key in def) {
             if (JSON.stringify(user[key]) === JSON.stringify(old[key])) user[key] = def[key]
         }
