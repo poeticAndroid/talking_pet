@@ -5,6 +5,10 @@ html {
     font-size: 20px;
 }
 
+pre {
+    white-space: pre-wrap;
+}
+
 #userInp {
     background: #123;
     color: #eff;
@@ -53,6 +57,11 @@ html {
 
 .speaking {
     text-decoration: underline solid;
+    opacity: 1;
+}
+
+.read {
+    transition-duration: 1s;
     opacity: 1;
 }
 

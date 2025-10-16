@@ -6,6 +6,8 @@ export default class Chat extends Queue {
     lastText
     lastRole
 
+    streaming
+
     constructor(container = this.container) {
         super()
         this.container = container
@@ -21,11 +23,22 @@ export default class Chat extends Queue {
             this.lastText = null
             if (message.success) {
                 if (message.token) {
-                    let el = this.container.querySelector(`#message_${message.id}`) || this.log("", "assistant")
-                    el.classList.add("unread")
-                    el.id = `message_${message.id}`
-                    el.innerHTML += this.escape(message.token)
-                    el.scrollIntoView(true)
+                    if (!this.streaming)
+                        this.log('<span class="sentence unread"></span>', "assistant", true).id = `message_${message.id}`
+                    this.streaming = true
+                    let lastSentence
+                    for (let sentence of this.container.querySelectorAll(`#message_${message.id} .sentence`)) {
+                        if (lastSentence && !lastSentence.id) {
+                            let id = _id++
+                            lastSentence.id = `sentence_${id}`
+                            this.outbox.push({ id: id, input: lastSentence.textContent })
+                        }
+                        lastSentence = sentence
+                    }
+                    lastSentence.textContent += message.token
+                    lastSentence.scrollIntoView(true)
+                    lastSentence.outerHTML = '<span class="sentence unread">' + this.splitSentences(lastSentence.textContent)
+                        .map(s => this.escape(s)).join('</span><span class="sentence unread">') + '</span>'
                     return;
                 }
                 let id = message.id
@@ -51,11 +64,27 @@ export default class Chat extends Queue {
                     }
                     this.lastRole = message.role
                 }
-                let sentences = this.logMessage(message)
-                if (message.role == "assistant" && this.pipes.length)
-                    sentences.forEach(sentence => {
-                        this.outbox.push(sentence)
-                    })
+                if (this.streaming) {
+                    this.messages.push(message)
+                    for (let sentence of this.container.querySelectorAll(`#message_${message.id} .sentence`)) {
+                        if (sentence && !sentence.id) {
+                            let id = _id++
+                            sentence.id = `sentence_${id}`
+                            this.outbox.push({ id: id, input: sentence.textContent })
+                        }
+                    }
+                    if (!this.pipes.length) {
+                        this.outbox = []
+                        this.readAll()
+                    }
+                    this.streaming = false
+                } else {
+                    let sentences = this.logMessage(message)
+                    if (message.role == "assistant" && this.pipes.length)
+                        sentences.forEach(sentence => {
+                            this.outbox.push(sentence)
+                        })
+                }
             }
         }
     }
@@ -122,66 +151,28 @@ export default class Chat extends Queue {
     splitSentences(txt) {
         if (!txt) return []
         let sentences = [""]
-        let quot,
-            wrap,
-            parens = 0
         for (let char of txt) {
             sentences[sentences.length - 1] += char
-            if (quot || parens) {
-                switch (char) {
-                    case quot:
-                        quot = null
-                        break;
-                    case "(":
-                        parens++
-                        break;
-                    case ")":
-                        parens--
-                        break;
 
-                    case ".":
-                    case "!":
-                    case "?":
-                    case ":":
-                    case ";":
-                        wrap = true
-                        break;
-                }
-                if (wrap && !(quot || parens)) {
+            switch (char) {
+                case ".":
+                case "!":
+                case "?":
+                case ":":
+                case ";":
+                    if (sentences[sentences.length - 1] == char)
+                        sentences[sentences.length - 2] += sentences.pop()
                     sentences.push("")
-                    wrap = false
-                }
-            } else {
-                switch (char) {
-                    // case '"':
-                    // case "'":
-                    //     quot = char
-                    //     if (sentences[sentences.length - 1].slice(-2).trim().length > 1)
-                    //         quot = null
-                    //     break;
-
-                    // case "(":
-                    //     parens++
-                    //     break;
-
-                    case ".":
-                    case "!":
-                    case "?":
-                    case ":":
-                    case ";":
-                        if (sentences[sentences.length - 1] == char)
-                            sentences[sentences.length - 2] += sentences.pop()
-                        sentences.push("")
-                        break;
-                }
+                    break;
             }
         }
-        if (!sentences[sentences.length - 1].trim()) sentences.pop()
+
+        if (!sentences[sentences.length - 1]) sentences.pop()
         return sentences
     }
 
     log(str, src, html) {
-        let el = document.createElement("p")
+        let el = document.createElement("pre")
         el.textContent = str
         if (html) el.innerHTML = str
         if (src) {
