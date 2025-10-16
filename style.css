@@ -5,12 +5,33 @@ html {
     font-size: 20px;
 }
 
+body {
+    max-width: 48em;
+    margin: 1em auto;
+    padding: 1em;
+}
+
 pre {
+    background: #123;
+    border-radius: 0.5em;
+    box-shadow: #000 0 0 0.25em;
+    clear: both;
+    margin: 0.5em auto;
+    padding: 0.25em 0.5em;
+    max-width: 75%;
     white-space: pre-wrap;
 }
 
+form {
+    clear: both;
+}
+
+form p {
+    margin: 0.25em;
+}
+
 #userInp {
-    background: #123;
+    background: #001;
     color: #eff;
     font-family: inherit;
     font-size: 1.5em;
@@ -18,25 +39,27 @@ pre {
     border: 0;
     display: block;
     margin: auto;
-    width: 90vw;
+    width: 90%;
     overflow: hidden;
 }
 
 
-.system {
-    background: #321;
-}
 
 .user {
-    background: #123;
+    background: #234;
+    float: right;
+    margin: 0.5em;
 }
 
 .assistant {
-    background: #001;
+    background: #345;
+    float: left;
+    margin: 0.5em;
 }
 
 .error {
     color: red;
+    margin: 1em 0.5em 1em 0.5em;
 }
 
 

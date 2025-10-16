@@ -176,10 +176,7 @@ export default class Chat extends Queue {
         let el = document.createElement("pre")
         el.textContent = str
         if (html) el.innerHTML = str
-        if (src) {
-            el.classList.add(src)
-            el.innerHTML = `<strong>${src}:</strong> ` + el.innerHTML
-        }
+        if (src) el.classList.add(src)
         this.container.appendChild(el)
         setTimeout(() => { el.scrollIntoView(true) })
         return el
