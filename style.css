@@ -7,8 +7,8 @@ html {
 
 body {
     max-width: 48em;
-    margin: 1em auto;
-    padding: 1em;
+    margin: 0.5em auto;
+    padding: 0.5em;
 }
 
 pre {
@@ -28,7 +28,7 @@ form {
 
 form p {
     clear: both;
-    /* padding: 0.0625em; */
+    padding: 0.0625em;
 }
 
 #userInp {
@@ -44,17 +44,16 @@ form p {
     padding: 0.125em 0.25em;
     width: 90%;
     overflow: hidden;
+}
 
+#userInp.user {
+    background: #234;
+    float: none;
+}
 
-
-    .user {
-        background: #234;
-    }
-
-    .assistant {
-        background: #345;
-    }
-
+#userInp.assistant {
+    background: #345;
+    float: none;
 }
 
 
@@ -62,18 +61,15 @@ form p {
 .user {
     background: #234;
     float: right;
-    margin: 0.5em;
 }
 
 .assistant {
     background: #345;
     float: left;
-    margin: 0.5em;
 }
 
 .error {
     color: red;
-    margin: 1em 0.5em 1em 0.5em;
 }
 
 
