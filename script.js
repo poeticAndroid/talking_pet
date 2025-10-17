@@ -137,6 +137,7 @@ async function updateStatus(e) {
 
 function userSubmit(e) {
     e?.preventDefault()
+    $("#userInp").classList.remove(sendAs)
     let userTxt = $("#userInp").value.trim()
     let parts = userTxt.split(/\s+/)
     let message
@@ -289,6 +290,7 @@ function userSubmit(e) {
         if (i >= 0) history.splice(i, 1)
         history.push(userTxt)
     }
+    $("#userInp").classList.add(sendAs)
     $("#userInp").value = userTxt.slice(0, 1) == "/" ? "/" : ""
 }
 
@@ -373,6 +375,7 @@ function loadConfig(file = baseUrl + "llm/default") {
 }
 
 function logChat(file = chatFile) {
+    let f = lastFile
     chatFile = file = canonFile(file)
     let content = { task: "chat", auto_log: autoLog, llm: llmFile, tts: ttsFile, system: [], intro: [] }
     content.messages = JSON.parse(JSON.stringify(chat.messages))
@@ -385,6 +388,7 @@ function logChat(file = chatFile) {
             if (JSON.stringify(def[key]) == JSON.stringify(content[key])) delete content[key]
         }
     }
+    lastFile = f
     return content
 }
 

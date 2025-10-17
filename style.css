@@ -27,11 +27,13 @@ form {
 }
 
 form p {
-    margin: 0.25em;
+    clear: both;
+    /* padding: 0.0625em; */
 }
 
 #userInp {
-    background: #001;
+    background: #123;
+    border-radius: 0.5em;
     color: #eff;
     font-family: inherit;
     font-size: 1.5em;
@@ -39,8 +41,20 @@ form p {
     border: 0;
     display: block;
     margin: auto;
+    padding: 0.125em 0.25em;
     width: 90%;
     overflow: hidden;
+
+
+
+    .user {
+        background: #234;
+    }
+
+    .assistant {
+        background: #345;
+    }
+
 }
 
 
