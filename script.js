@@ -16,6 +16,7 @@ let autoLog
 
 async function init() {
     $("#log").addEventListener("dblclick", e => {
+        e.preventDefault()
         if (tts.isProcessing) tts.shutdown()
         chat.readAll()
         speaker.clear()
@@ -109,7 +110,9 @@ async function updateStatus(e) {
         else el.setAttribute("class", "")
     }
 
-    if (autoLog) urlfs.writeJson(chatFile, logChat(chatFile))
+    setTimeout(() => {
+        if (autoLog) urlfs.writeJson(chatFile, logChat(chatFile))
+    }, 1024)
 
     if (currentSentence != $("#sentence_" + tts.currentTask?.id)) {
         currentSentence?.classList.remove("rendering")
