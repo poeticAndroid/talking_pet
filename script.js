@@ -12,19 +12,9 @@ let woke, autoUnload
 
 let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
-let autoLog
+let autoLog, lastLog, lastMessage
 
 async function init() {
-    $("#log").addEventListener("dblclick", e => {
-        e.preventDefault()
-        if (tts.isProcessing) tts.shutdown()
-        chat.readAll()
-        speaker.clear()
-        let message = chat.pop()
-        sendAs = message?.role || "system"
-        $("#userInp").classList.add(sendAs)
-        $("#userInp").value = message?.content || ""
-    })
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
         if (e.key == "Tab" && e.target.value.trim().slice(0, 1) == "/") {
@@ -57,6 +47,17 @@ async function init() {
     tts.addEventListener("statuschange", updateStatus)
     speaker.addEventListener("statuschange", updateStatus)
     chat.queue({ role: "system", content: "Loading..." })
+
+    setInterval(() => {
+        lastMessage?.removeEventListener("dblclick", onMessageDblClick)
+        lastMessage = $(`#message_${chat.messages[chat.messages.length - 1].id}`)
+        lastMessage?.addEventListener("dblclick", onMessageDblClick)
+
+        if (autoLog && (lastLog != chat.messages.length)) {
+            urlfs.writeJson(chatFile, logChat(chatFile))
+            lastLog = chat.messages.length
+        }
+    }, 1024)
 
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
@@ -109,10 +110,6 @@ async function updateStatus(e) {
         if (q.isProcessing) el.setAttribute("class", "init")
         else el.setAttribute("class", "")
     }
-
-    setTimeout(() => {
-        if (autoLog) urlfs.writeJson(chatFile, logChat(chatFile))
-    }, 1024)
 
     if (currentSentence != $("#sentence_" + tts.currentTask?.id)) {
         currentSentence?.classList.remove("rendering")
@@ -178,7 +175,7 @@ function userSubmit(e) {
             parts[1] = null
         case "/ls":
             file = completeFile(parts[1] || "./")
-            chat.queue(`Directory listing of ${urlfs.absUrl(file).replace(location.toString(), "~/")}:`)
+            chat.queue(`Directory listing of ${urlfs.absUrl(file).replace(location.toString(), "~/")}:\n`)
             urlfs.ls(file).sort().forEach(entry => !entry.includes("?") && chat.queue(entry))
             break;
 
@@ -430,6 +427,16 @@ function inputAutoHeight() {
     scrollBy(0, offset)
 }
 
+function onMessageDblClick(e) {
+    e.preventDefault()
+    if (tts.isProcessing) tts.shutdown()
+    chat.readAll()
+    speaker.clear()
+    let message = chat.pop()
+    sendAs = message?.role || "system"
+    $("#userInp").classList.add(sendAs)
+    $("#userInp").value = message?.content || ""
+}
 
 function $(selector) {
     return document.querySelector(selector)

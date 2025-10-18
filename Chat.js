@@ -31,7 +31,8 @@ export default class Chat extends Queue {
                         if (lastSentence && !lastSentence.id) {
                             let id = _id++
                             lastSentence.id = `sentence_${id}`
-                            this.outbox.push({ id: id, input: lastSentence.textContent })
+                            if (this.pipes.length) this.outbox.push({ id: id, input: lastSentence.textContent })
+                            else lastSentence.classList.replace("unread", "read")
                         }
                         lastSentence = sentence
                     }
