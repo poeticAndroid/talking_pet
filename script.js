@@ -15,6 +15,15 @@ let baseUrl = canonFile(".", "/")
 let autoLog
 
 async function init() {
+    $("#log").addEventListener("dblclick", e => {
+        if (tts.isProcessing) tts.shutdown()
+        chat.readAll()
+        speaker.clear()
+        let message = chat.pop()
+        sendAs = message?.role || "system"
+        $("#userInp").classList.add(sendAs)
+        $("#userInp").value = message?.content || ""
+    })
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
         if (e.key == "Tab" && e.target.value.trim().slice(0, 1) == "/") {
