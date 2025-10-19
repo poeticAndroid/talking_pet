@@ -72,6 +72,10 @@ form p {
     color: red;
 }
 
+.chosen {
+    box-shadow: #def 0 0 0.5em;
+}
+
 
 .unread {
     transition-duration: 1s;
@@ -122,4 +126,17 @@ form p {
 
 #throbber.active {
     opacity: 1;
+}
+
+
+
+.split {
+    clear: both;
+    display: flex;
+}
+
+.split pre {
+    font-size: 0.75em;
+    float: none;
+    flex-basis: 46%;
 }

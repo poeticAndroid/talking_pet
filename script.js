@@ -14,6 +14,8 @@ let lastFile, llmFile, ttsFile, chatFile
 let baseUrl = canonFile(".", "/")
 let autoLog, lastLog, lastMessage
 
+let abTesting
+
 async function init() {
     $("form").addEventListener("submit", userSubmit)
     $("#userInp").addEventListener("keydown", e => {
@@ -46,18 +48,9 @@ async function init() {
     llm.addEventListener("statuschange", updateStatus)
     tts.addEventListener("statuschange", updateStatus)
     speaker.addEventListener("statuschange", updateStatus)
-    chat.queue({ role: "system", content: "Loading..." })
+    chat.queue({ role: "system", content: "Loading...", id: _id++ })
 
-    setInterval(() => {
-        lastMessage?.removeEventListener("dblclick", onMessageDblClick)
-        lastMessage = $(`#message_${chat.messages[chat.messages.length - 1].id}`)
-        lastMessage?.addEventListener("dblclick", onMessageDblClick)
-
-        if (autoLog && (lastLog != chat.messages.length)) {
-            urlfs.writeJson(chatFile, logChat(chatFile))
-            lastLog = chat.messages.length
-        }
-    }, 1024)
+    setInterval(updateMessageUI, 1024)
 
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
@@ -146,6 +139,16 @@ async function updateStatus(e) {
 
 function userSubmit(e) {
     e?.preventDefault()
+
+    if (abTesting) {
+        chat.queue({ role: "assistant", content: abTesting.querySelector(".chosen").textContent, id: _id++ })
+        abTesting.parentElement.removeChild(abTesting)
+        abTesting = null
+        if (llm.isProcessing) llm.shutdown()
+        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
+        return setTimeout(userSubmit, 256)
+    }
+
     $("#userInp").classList.remove(sendAs)
     let userTxt = $("#userInp").value.trim()
     let parts = userTxt.split(/\s+/)
@@ -427,8 +430,88 @@ function inputAutoHeight() {
     scrollBy(0, offset)
 }
 
-function onMessageDblClick(e) {
+let _clickTO
+function updateMessageUI(e) {
+    if (abTesting) {
+        lastMessage?.removeEventListener("click", onMessageSplit)
+        lastMessage?.removeEventListener("dblclick", onMessageEdit)
+        lastMessage = null
+        for (let alt of abTesting.querySelectorAll("pre")) {
+            let id = parseInt(alt.id.split("_")[1])
+            if (chat.messages[chat.messages.length - 1].id == id) {
+                chat.messages.pop()
+            }
+        }
+    } else {
+        let last = $(`#message_${chat.messages[chat.messages.length - 1]?.id}`)
+        if (lastMessage != last) {
+            lastMessage?.removeEventListener("click", onMessageSplit)
+            lastMessage?.removeEventListener("dblclick", onMessageEdit)
+            lastMessage = last
+            lastMessage?.addEventListener("dblclick", onMessageEdit)
+            lastMessage?.addEventListener("click", onMessageSplit)
+        }
+    }
+
+    if (autoLog && (lastLog != chat.messages.length)) {
+        urlfs.writeJson(chatFile, logChat(chatFile))
+        lastLog = chat.messages.length
+    }
+}
+
+function onMessageSplit(e) {
     e.preventDefault()
+    clearTimeout(_clickTO)
+    let chosen = e.target
+    while (chosen && chosen.tagName.toLowerCase() != "pre") chosen = chosen.parentElement
+    if (abTesting) {
+        for (let alt of abTesting.querySelectorAll("pre")) {
+            let id = parseInt(alt.id.split("_")[1])
+            if (alt == chosen) {
+                alt.classList.add("chosen")
+            } else {
+                alt.classList.remove("chosen")
+                alt.textContent = ""
+                _id = id
+            }
+        }
+        if (llm.isProcessing) llm.restart()
+        think()
+    } else {
+        _clickTO = setTimeout(() => {
+            tts.clear()
+            speaker.clear()
+            chat.readAll()
+            chat.removePipeTo(tts)
+
+            if (chat.messages[chat.messages.length - 1].role != "assistant") return;
+            let message = chat.pop()
+            abTesting = document.createElement("p")
+            abTesting.classList.add("split")
+            $("#log").appendChild(abTesting)
+
+            let el = document.createElement("pre")
+            el.classList.add("assistant")
+            el.classList.add("chosen")
+            el.id = `message_${message.id}`
+            el.addEventListener("click", onMessageSplit)
+            el.textContent = message.content
+            abTesting.appendChild(el)
+
+            el = document.createElement("pre")
+            el.classList.add("assistant")
+            el.id = `message_${_id}`
+            el.addEventListener("click", onMessageSplit)
+            abTesting.appendChild(el)
+
+            think()
+        }, 512)
+    }
+}
+
+function onMessageEdit(e) {
+    e.preventDefault()
+    clearTimeout(_clickTO)
     if (tts.isProcessing) tts.shutdown()
     chat.readAll()
     speaker.clear()
