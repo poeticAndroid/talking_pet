@@ -443,6 +443,7 @@ function updateMessageUI(e) {
             let id = parseInt(alt.id.split("_")[1])
             if (chat.messages[chat.messages.length - 1].id == id) {
                 chat.messages.pop()
+                lastLog--
             }
         }
     } else {
