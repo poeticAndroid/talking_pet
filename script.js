@@ -467,21 +467,21 @@ function onMessageSplit(e) {
     clearTimeout(_clickTO)
     let chosen = e.target
     while (chosen && chosen.tagName.toLowerCase() != "pre") chosen = chosen.parentElement
-    if (abTesting) {
-        for (let alt of abTesting.querySelectorAll("pre")) {
-            let id = parseInt(alt.id.split("_")[1])
-            if (alt == chosen) {
-                alt.classList.add("chosen")
-            } else {
-                alt.classList.remove("chosen")
-                alt.textContent = ""
-                _id = id
+    _clickTO = setTimeout(() => {
+        if (abTesting) {
+            for (let alt of abTesting.querySelectorAll("pre")) {
+                let id = parseInt(alt.id.split("_")[1])
+                if (alt == chosen) {
+                    alt.classList.add("chosen")
+                } else {
+                    alt.classList.remove("chosen")
+                    alt.textContent = ""
+                    _id = id
+                }
             }
-        }
-        if (llm.isProcessing) llm.restart()
-        think()
-    } else {
-        _clickTO = setTimeout(() => {
+            if (llm.isProcessing) llm.restart()
+            think()
+        } else {
             tts.clear()
             speaker.clear()
             chat.readAll()
@@ -491,6 +491,7 @@ function onMessageSplit(e) {
             let message = chat.pop()
             abTesting = document.createElement("p")
             abTesting.classList.add("split")
+            abTesting.addEventListener("dblclick", onMessageEdit)
             $("#log").appendChild(abTesting)
 
             let el = document.createElement("pre")
@@ -508,8 +509,8 @@ function onMessageSplit(e) {
             abTesting.appendChild(el)
 
             think()
-        }, 512)
-    }
+        }
+    }, 512)
 }
 
 function onMessageEdit(e) {
@@ -518,10 +519,18 @@ function onMessageEdit(e) {
     if (tts.isProcessing) tts.shutdown()
     chat.readAll()
     speaker.clear()
-    let message = chat.pop()
-    sendAs = message?.role || "system"
-    $("#userInp").classList.add(sendAs)
-    $("#userInp").value = message?.content || ""
+    if (abTesting) {
+        chat.queue({ role: "assistant", content: abTesting.querySelector(".chosen").textContent, id: _id++ })
+        abTesting.parentElement.removeChild(abTesting)
+        abTesting = null
+        if (llm.isProcessing) llm.shutdown()
+        if ($("#ttsEnabled").checked) chat.pipeTo(tts)
+    } else {
+        let message = chat.pop()
+        sendAs = message?.role || "system"
+        $("#userInp").classList.add(sendAs)
+        $("#userInp").value = message?.content || ""
+    }
 }
 
 function $(selector) {
