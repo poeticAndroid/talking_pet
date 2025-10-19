@@ -16,8 +16,10 @@ export default class Chat extends Queue {
 
         if (typeof message == "string") {
             this.print(message + "\n")
+            this.finishLastSentence()
         } else if (message.success === false) {
             this.print("ERR! " + (message.status?.stack || JSON.stringify(message.status, null, 2)), "error", message.id)
+            this.finishLastSentence()
         } else if (message.token) {
             this.print(message.token, message.role || "assistant", message.id)
         } else if (message.id) {
