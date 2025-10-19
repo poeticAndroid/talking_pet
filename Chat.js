@@ -83,19 +83,6 @@ export default class Chat extends Queue {
         })
     }
 
-    logMessage(message) {
-        message.id = message.id || _id++
-        let sentences = this.splitSentences(message.content).map(text => ({ id: _id++, input: text }))
-        let html = ""
-        for (let sentence of sentences) html += `<span id="sentence_${sentence.id}" class="sentence ${(message.role == "assistant" && this.pipes.length) ? "unread" : "read"}">${this.escape(sentence.input)}</span>`
-        let el = this.container.querySelector(`#message_${message.id}`)
-        el?.parentElement.removeChild(el)
-        el = this.log(html, message.role, true)
-        el.id = `message_${message.id}`
-        this.messages.push(message)
-        return sentences
-    }
-
     splitSentences(txt) {
         if (!txt) return []
         let sentences = [""]
@@ -120,16 +107,6 @@ export default class Chat extends Queue {
         return sentences
     }
 
-    log(str, src, html) {
-        let el = document.createElement("pre")
-        el.textContent = str
-        if (html) el.innerHTML = str
-        if (src) el.classList.add(src)
-        this.container.appendChild(el)
-        setTimeout(() => { el.scrollIntoView(true) })
-        return el
-    }
-
     print(content, role, id) {
         if (!this.container) return;
         let el = id ? this.container.querySelector(`#message_${id}`) : this.lastText
@@ -140,6 +117,7 @@ export default class Chat extends Queue {
             if (id) el.id = `message_${id}`
             if (!(role || id)) this.lastText = el
             this.container.appendChild(el)
+            setTimeout(() => { this.lastText = null }, 1024)
         }
 
         let lastSentence
