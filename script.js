@@ -392,6 +392,9 @@ function logChat(file = chatFile) {
     let content = { task: "chat", auto_log: autoLog, llm: llmFile, tts: ttsFile, system: [], intro: [] }
     content.messages = JSON.parse(JSON.stringify(chat.messages))
     content.messages.forEach(message => delete message.id)
+    if (abTesting) {
+        content.messages.push({ role: "assistant", content: abTesting.querySelector(".chosen").textContent })
+    }
     while (content.messages[0]?.role == "system") content.system.push(content.messages.shift())
     while (content.messages[0]?.role == "assistant") content.intro.push(content.messages.shift())
     if (file != canonFile(baseUrl + "default")) {
