@@ -4,9 +4,7 @@ export default class Chat extends Queue {
     messages = []
     container = null
     lastText
-    lastRole
 
-    streaming
 
     constructor(container = this.container) {
         super()
@@ -15,78 +13,25 @@ export default class Chat extends Queue {
 
     process(message) {
         // console.log("Chat got:", message)
-        if (typeof message == "string") {
-            if (this.lastText) this.lastText.innerHTML += '<br/>' + this.escape(message)
-            else this.lastText = this.log(message)
-            setTimeout(() => { this.lastText = null }, 1024)
-        } else {
-            this.lastText = null
-            if (message.success) {
-                if (message.token) {
-                    if (!this.streaming)
-                        this.log('<span class="sentence unread"></span>', "assistant", true).id = `message_${message.id}`
-                    this.streaming = true
-                    let lastSentence
-                    for (let sentence of this.container.querySelectorAll(`#message_${message.id} .sentence`)) {
-                        if (lastSentence && !lastSentence.id) {
-                            let id = _id++
-                            lastSentence.id = `sentence_${id}`
-                            if (this.pipes.length) this.outbox.push({ id: id, input: lastSentence.textContent })
-                            else lastSentence.classList.replace("unread", "read")
-                        }
-                        lastSentence = sentence
-                    }
-                    lastSentence.textContent += message.token
-                    lastSentence.scrollIntoView(true)
-                    lastSentence.outerHTML = '<span class="sentence unread">' + this.splitSentences(lastSentence.textContent)
-                        .map(s => this.escape(s)).join('</span><span class="sentence unread">') + '</span>'
-                    return;
-                }
-                let id = message.id
-                message = message[0].generated_text.pop()
-                message.id = id
-            }
-            if (message.success === false) {
-                let el = this.log("ERR! " + (message.status?.stack || JSON.stringify(message.status, null, 2)))
-                el.classList.add("error")
-            } else {
-                if (this.lastRole != message.role &&
-                    this.pipes[0]?.isInitialized &&
-                    !this.pipes[0]?.isProcessing &&
-                    !this.pipes[0]?.pipes[0]?.isProcessing) {
-                    switch (message.role) {
-                        case "user":
-                            this.outbox.push({ input: "hmmm..." })
-                            break;
 
-                        case "assistant":
-                            this.outbox.push({ input: "ah!" })
-                            break;
-                    }
-                    this.lastRole = message.role
-                }
-                if (this.streaming) {
-                    this.messages.push(message)
-                    for (let sentence of this.container.querySelectorAll(`#message_${message.id} .sentence`)) {
-                        if (sentence && !sentence.id) {
-                            let id = _id++
-                            sentence.id = `sentence_${id}`
-                            this.outbox.push({ id: id, input: sentence.textContent })
-                        }
-                    }
-                    if (!this.pipes.length) {
-                        this.outbox = []
-                        this.readAll()
-                    }
-                    this.streaming = false
-                } else {
-                    let sentences = this.logMessage(message)
-                    if (message.role == "assistant" && this.pipes.length)
-                        sentences.forEach(sentence => {
-                            this.outbox.push(sentence)
-                        })
+        if (typeof message == "string") {
+            this.print(message + "\n")
+        } else if (message.success === false) {
+            this.print("ERR! " + (message.status?.stack || JSON.stringify(message.status, null, 2)), "error", message.id)
+        } else if (message.token) {
+            this.print(message.token, message.role || "assistant", message.id)
+        } else if (message.id) {
+            if (message[0]?.generated_text) {
+                message = {
+                    content: message[0].generated_text.pop()?.content,
+                    role: message.role || "assistant",
+                    id: message.id
                 }
             }
+            if (!this.print("", message.role, message.id).textContent)
+                this.print(message.content, message.role, message.id)
+            this.finishLastSentence(message.role)
+            this.messages.push(message)
         }
     }
 
@@ -181,6 +126,56 @@ export default class Chat extends Queue {
         this.container.appendChild(el)
         setTimeout(() => { el.scrollIntoView(true) })
         return el
+    }
+
+    print(content, role, id) {
+        if (!this.container) return;
+        let el = id ? this.container.querySelector(`#message_${id}`) : this.lastText
+        if (!el) {
+            this.lastText = null
+            el = document.createElement("pre")
+            if (role) el.classList.add(role)
+            if (id) el.id = `message_${id}`
+            if (!(role || id)) this.lastText = el
+            this.container.appendChild(el)
+        }
+
+        let lastSentence
+        for (let sentence of el.querySelectorAll(`.sentence`)) {
+            if (lastSentence && !lastSentence.id) {
+                let id = _id++
+                lastSentence.id = `sentence_${id}`
+                if (role == "assistant" && this.pipes.length) this.outbox.push({ id: id, input: lastSentence.textContent })
+                else lastSentence.classList.replace("unread", "read")
+            }
+            lastSentence = sentence
+        }
+        if (!lastSentence) {
+            lastSentence = document.createElement("span")
+            lastSentence.setAttribute("class", "sentence unread")
+            el.appendChild(lastSentence)
+        }
+
+        lastSentence.textContent += content
+        lastSentence.scrollIntoView(true)
+        lastSentence.outerHTML = '<span class="sentence unread">' + this.splitSentences(lastSentence.textContent)
+            .map(s => this.escape(s)).join('</span><span class="sentence unread">') + '</span>'
+
+        return el
+    }
+
+    finishLastSentence(role) {
+        for (let sentence of this.container.querySelectorAll(`.sentence`)) {
+            if (sentence && !sentence.id) {
+                let id = _id++
+                sentence.id = `sentence_${id}`
+                this.outbox.push({ id: id, input: sentence.textContent })
+            }
+        }
+        if (!(role == "assistant" && this.pipes.length)) {
+            this.outbox = []
+            this.readAll()
+        }
     }
 
     escape(txt) {
