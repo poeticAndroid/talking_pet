@@ -55,7 +55,20 @@ async function init() {
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
     await updateDefaults()
-    loadConfig("default")
+    $("#log pre").textContent = "Select chat:"
+
+    for (let file of urlfs.ls(baseUrl)) {
+        if (file.slice(-5) == ".json" && file != "default.json") {
+            let el = document.createElement("pre")
+            el.innerHTML = `<a href="javascript:loadConfig('${file}');undefined">/load ${file.replace(".json", "")}</a>`
+            $("#log").appendChild(el)
+        }
+    }
+    let el = document.createElement("pre")
+    el.innerHTML = `<a href="javascript:document.getElementById('userInp').value='/new ';undefined">/new [name]</a>`
+    $("#log").appendChild(el)
+
+    // loadConfig("default")
 }
 
 async function updateDefaults() {
@@ -161,6 +174,7 @@ function userSubmit(e) {
             chat.queue("/ls      - list files")
             chat.queue("/rm      - delete file")
             chat.queue("/open    - open file for editing")
+            chat.queue("/new     - create new chat")
             chat.queue("/load    - load chat or config file")
             chat.queue("/voices  - list local system voices")
             chat.queue("/log     - generate chat file")
@@ -216,6 +230,10 @@ function userSubmit(e) {
             }
             break;
 
+        case "/new":
+            file = canonFile(parts[1])
+            if (!file) { chat.queue("No filename specified!"); break; }
+            if (!urlfs.readJson(file)) urlfs.writeJson(file, { task: "chat", messages: [] })
         case "/load":
             file = completeFile(parts[1] || lastFile)
             if (!file) { chat.queue("No filename specified!"); break; }
@@ -309,8 +327,8 @@ function userSubmit(e) {
 function completeFile(filename = "default") {
     let dir, file = urlfs.absUrl(filename.toLowerCase(), "")
     if (!urlfs.readText(file)) {
-        if (lastFile.slice(0, file.length) == file) file = lastFile
-        if (chatFile.slice(0, file.length) == file) file = chatFile
+        if (lastFile?.slice(0, file.length) == file) file = lastFile
+        if (chatFile?.slice(0, file.length) == file) file = chatFile
         dir = urlfs.dirname(file)
         for (let f of urlfs.ls(dir).sort()) {
             f = dir + f
@@ -543,3 +561,5 @@ function $$(selector) {
 
 let _id = 1
 init()
+
+window.loadConfig = loadConfig
