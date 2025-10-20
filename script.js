@@ -173,8 +173,8 @@ function userSubmit(e) {
         case "/help":
             chat.queue("How to use talking_pet:\n")
             chat.queue("Type in messages to chat with your AI or any of the /commands listed below.")
-            chat.queue("Double tap message to edit it.")
-            chat.queue("Single tap message to generate alternative responses. Tap whichever option you prefer until you're satisfied.\n")
+            chat.queue("Double tap message to remove and edit it.")
+            chat.queue("Single tap message to generate alternative responses. Tap whichever response you prefer until you're satisfied.\n")
             chat.queue("/help    - show this message")
             chat.queue("/cd      - change current working directory")
             chat.queue("/ls      - list files")
