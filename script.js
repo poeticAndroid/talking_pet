@@ -55,20 +55,22 @@ async function init() {
 
     if (!urlfs.readText("default.json")) $("#userInp").value = "/help"
     await updateDefaults()
-    $("#log pre").textContent = "Select chat:"
+    // $("#log pre").textContent = "Select chat:"
 
-    for (let file of urlfs.ls(baseUrl)) {
-        if (file.slice(-5) == ".json" && file != "default.json") {
-            let el = document.createElement("pre")
-            el.innerHTML = `<a href="javascript:loadConfig('${file}');undefined">/load ${file.replace(".json", "")}</a>`
-            $("#log").appendChild(el)
+    loadConfig("default")
+
+    setTimeout(() => {
+        for (let file of urlfs.ls(baseUrl)) {
+            if (file.slice(-5) == ".json" && file != "default.json") {
+                let el = document.createElement("pre")
+                el.innerHTML = `<a href="javascript:loadConfig('${file}');undefined">/load ${file.replace(".json", "")}</a>`
+                $("#log").appendChild(el)
+            }
         }
-    }
-    let el = document.createElement("pre")
-    el.innerHTML = `<a href="javascript:document.getElementById('userInp').value='/new ';undefined">/new [name]</a>`
-    $("#log").appendChild(el)
-
-    // loadConfig("default")
+        let el = document.createElement("pre")
+        el.innerHTML = `<a href="javascript:document.getElementById('userInp').value='/new ';undefined">/new [name]</a>`
+        $("#log").appendChild(el)
+    }, 1024)
 }
 
 async function updateDefaults() {
