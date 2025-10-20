@@ -68,7 +68,7 @@ async function init() {
             }
         }
         let el = document.createElement("pre")
-        el.innerHTML = `<a href="javascript:document.getElementById('userInp').value='/new ';undefined">/new [name]</a>`
+        el.innerHTML = `<a href="javascript:document.getElementById('userInp').value='/new ';undefined">/new [chat name]</a>`
         $("#log").appendChild(el)
     }, 1024)
 }
@@ -171,6 +171,10 @@ function userSubmit(e) {
     let file, content
     switch (parts[0].toLowerCase()) {
         case "/help":
+            chat.queue("How to use talking_pet:\n")
+            chat.queue("Type in messages to chat with your AI or any of the /commands listed below.")
+            chat.queue("Double tap message to edit it.")
+            chat.queue("Single tap message to generate alternative responses. Tap whichever option you prefer until you're satisfied.\n")
             chat.queue("/help    - show this message")
             chat.queue("/cd      - change current working directory")
             chat.queue("/ls      - list files")
