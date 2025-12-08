@@ -77,22 +77,7 @@ async function updateDefaults() {
     const files = ["default.json", "llm/default.json", "tts/default.json",
         "llm/smollm2-1.7b-instruct.json", "llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json",
         "tts/mms-tts-eng.json", "tts/speecht5_tts.json", "tts/system.json"]
-    for (let file of files) {
-        urlfs.delete(file + "?new")
-        await urlfs.preload(file, file + "?new")
-        let user = urlfs.readJson(file)
-        let old = urlfs.readJson(file + "?default") || {}
-        let def = urlfs.readJson(file + "?new")
-        for (let key in user) {
-            if (JSON.stringify(user[key]) === JSON.stringify(old[key])) user[key] = def[key]
-        }
-        for (let key in def) {
-            if (JSON.stringify(user[key]) === JSON.stringify(old[key])) user[key] = def[key]
-        }
-        urlfs.writeJson(file, user)
-        urlfs.writeText(file + "?default", urlfs.readText(file + "?new"))
-        urlfs.delete(file + "?new")
-    }
+    await urlfs.updateDefaults(files)
     let j = urlfs.editJson("default.json")
     if (j.llm?.includes("default")) j.llm = urlfs.readJson("default.json?default").llm
     if (j.tts?.includes("default")) j.tts = urlfs.readJson("default.json?default").tts
@@ -205,7 +190,7 @@ function userSubmit(e) {
         case "/rm":
             file = parts[1]
             if (!file) { chat.queue("No filename specified!"); break; }
-            urlfs.delete(file)
+            urlfs.rm(file)
             chat.queue(`${file} deleted!`)
             break;
 
