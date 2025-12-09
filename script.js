@@ -77,7 +77,7 @@ async function updateDefaults() {
     const files = ["default.json", "llm/default.json", "tts/default.json",
         "llm/smollm2-1.7b-instruct.json", "llm/smollm2-135m-instruct.json", "llm/smollm2-360m-instruct.json",
         "tts/mms-tts-eng.json", "tts/speecht5_tts.json", "tts/system.json"]
-    await urlfs.updateDefaults(files)
+    await urlfs.updateDefaults(...files)
     let j = urlfs.editJson("default.json")
     if (j.llm?.includes("default")) j.llm = urlfs.readJson("default.json?default").llm
     if (j.tts?.includes("default")) j.tts = urlfs.readJson("default.json?default").tts
