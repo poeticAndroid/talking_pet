@@ -1,4 +1,4 @@
-const cached = ["./", "./script.js", "./style.css"]
+let cached = ["./", "./script.js", "./style.css"]
 let cachePos = 0
 
 setInterval(async () => {
@@ -22,6 +22,12 @@ addEventListener("install", (event) => {
 addEventListener("fetch", async (event) => {
     let method = "" + event.request.method
     let url = "" + event.request.url
+    if (url.includes("?clear")) {
+        caches.delete("v1")
+        cached = ["./", "./script.js", "./style.css"]
+        cachePos = 0
+        return event.respondWith(fetch(event.request))
+    }
     url = url.split("?")[0]
     url = url.split("#")[0]
     // console.log("Fetch detected:", method, url)
