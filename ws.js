@@ -1,4 +1,4 @@
-const cached = []
+const cached = ["./", "./script.js", "./style.css"]
 let cachePos = 0
 
 setInterval(async () => {

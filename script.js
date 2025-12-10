@@ -552,4 +552,5 @@ function $$(selector) {
 
 let _id = 1
 init()
+window.loadConfig = loadConfig
 navigator.serviceWorker.register("./sw.js", { scope: "./" })
