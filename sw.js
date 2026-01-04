@@ -1,20 +1,4 @@
-let cached = ["./", "./script.js", "./style.css"]
-let cachePos = 0
-
-setInterval(async () => {
-    let url = cached[cachePos++]
-    if (!url) return cachePos = cached.length
-    let keys = await caches.keys()
-    for (let key of keys) {
-        let cache = await caches.open(key)
-        if (key == location.pathname) {
-            console.log("Caching", url, "...")
-            cache.add(url)
-        } else {
-            cache.delete(url)
-        }
-    }
-}, 1024)
+console.log("Starting service worker", location.pathname)
 
 setTimeout(async () => {
     let old = new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) // 10 days ago
@@ -37,15 +21,34 @@ addEventListener("fetch", async (event) => {
     if (url.includes("?clear")) {
         console.log("Cache is cleared! 💣")
         caches.delete(location.pathname)
-        cached = ["./", "./script.js", "./style.css"]
-        cachePos = 0
         return event.respondWith(fetch(event.request))
     }
     url = url.split("?")[0]
     url = url.split("#")[0]
     // console.log("Fetch detected:", method, url)
-
-    event.respondWith((async () => (await caches.match(url)) || (await fetch(url)))())
-
-    if (!cached.includes(url)) cached.push(url)
+    event.respondWith(cacheFirst(url))
 })
+
+async function cacheFirst(url) {
+    let cache = await caches.open(location.pathname)
+    let resp = await cache.match(url)
+
+    if (resp?.ok) {
+        recache(url)
+        return resp
+    } else {
+        return recache(url)
+    }
+}
+
+async function recache(url) {
+    let resp
+    try {
+        resp = await fetch(url)
+        if (resp?.ok) {
+            let cache = await caches.open(location.pathname)
+            await cache.put(url, resp.clone())
+        }
+    } catch (error) { }
+    return resp
+}
